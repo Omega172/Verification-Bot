@@ -82,48 +82,7 @@ client.on(Events.ShardResume, async => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
-    if (interaction.customId == "vyesp") {
-        
-
-        if (!user) {
-            try {
-                interaction.message.delete();
-            } catch(error) {
-                console.log(`Failed to delete message: ${interaction.message.id}`);
-                sendErrorMessage(`Failed to delete message: ${interaction.message.id}`);
-            }
-            return interaction.reply({ content: `Failed to get handle to user, their roles in the discord were not updated`, ephemeral: true });
-        } else {
-            user.roles.add(config.discord.verifiedRoles[1]);
-            
-            const hasUnverifiedRole = user.roles.cache.some(r => config.discord.unverifiedRoles.includes(r.id));
-            if (hasUnverifiedRole) {
-                user.roles.remove(config.discord.unverifiedRoles[0]);
-            }
-        }
-
-        try {
-            await user.setNickname(res.data.displayName);
-        } catch(error) {
-            console.log(error)
-            try {
-                interaction.message.delete();
-            } catch(error) {
-                console.log(`Failed to delete message: ${interaction.message.id}`);
-                sendErrorMessage(`Failed to delete message: ${interaction.message.id}`);
-            }
-            return interaction.reply({ content: `User verified but I failed to change the users nickname`, ephemeral: true });
-        }
-
-        try {
-            interaction.message.delete();
-        } catch(error) {
-            console.log(`Failed to delete message: ${interaction.message.id}`);
-            sendErrorMessage(`Failed to delete message: ${interaction.message.id}`);
-        }
-        return interaction.reply({ content: `Ok the user has been verified!`, ephemeral: false });
-    }
-
+    await interaction.deferReply({ephemeral: true });
     if (interaction.isModalSubmit()) {
         const profileLink = interaction.fields.getTextInputValue('profileLink');
 
@@ -154,7 +113,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 console.log(`Failed to delete message: ${interaction.message.id}`);
                 sendErrorMessage(`Failed to delete message: ${interaction.message.id}`);
             }
-            return interaction.reply({ content: `Failed to get handle to user`, ephemeral: true });
+            return interaction.editReply({ content: `Failed to get handle to user`, ephemeral: true });
         }
         const isVerified = interaction.member.roles.cache.some(r => r.id == config.discord.verifiedRoles[0]);
 
@@ -181,7 +140,7 @@ client.on(Events.InteractionCreate, async interaction => {
         }
         
         interaction.message.edit({ embeds: [Embed], components: [Row]});
-        interaction.reply("Thank you for providing the needed information, a staff member will be with you as soon as possible!");
+        interaction.editReply("Thank you for providing the needed information, a staff member will be with you as soon as possible!");
     }
 
     if (interaction.isButton()) {
@@ -189,7 +148,8 @@ client.on(Events.InteractionCreate, async interaction => {
 
         if (!inter) {
             console.log(`Error: No interaction matching ${interaction.customId} was found.`)
-            interaction.followUp({ content: 'There was an error while executing this function!', ephemeral: true });
+            interaction.channel.send({ content: `Error: No interaction matching ${interaction.customId} was found.`, ephemeral: true })
+            interaction.editReply({ content: 'There was an error while executing this function!', ephemeral: true });
             return;
         }
         try {
@@ -198,7 +158,8 @@ client.on(Events.InteractionCreate, async interaction => {
         } catch (error) {
             console.log(`Error: ${error}`);
             sendErrorMessage(`Error: ${error}`);
-            await interaction.followUp({ content: 'There was an error while executing this function!', ephemeral: true });
+            interaction.channel.send({ content: error, ephemeral: true })
+            await interaction.editReply({ content: 'There was an error while executing this function!', ephemeral: true });
         }
     }
 
@@ -207,6 +168,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
         if (!command) {
             console.log(`Error: No command matching ${interaction.commandName} was found.`)
+            interaction.channel.send({ content: `Error: No command matching ${interaction.commandName} was found.`, ephemeral: true })
             interaction.editReply({ content: 'There was an error while executing this command!', ephemeral: true });
             return;
         }
@@ -215,6 +177,7 @@ client.on(Events.InteractionCreate, async interaction => {
             return;
         } catch (error) {
             console.log(`Error: ${error}`);
+            interaction.channel.send({ content: error, ephemeral: true })
             await interaction.editReply({ content: 'There was an error while executing this command!', ephemeral: true });
         }
     }
