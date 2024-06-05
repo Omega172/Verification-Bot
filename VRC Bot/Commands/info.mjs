@@ -8,7 +8,7 @@ export async function run(interaction) {
         .setDescription('Details about the bot')
         .addFields(
             { name: 'Made by:', value: `<@583327588576002048>` },
-            { name: `Repo`, value: ``},
+            { name: `Repo`, value: `https://github.com/Omega172/Verification-Bot`},
         )
         .setTimestamp()
         .setFooter({ text: 'Bot made by Omega172' });
