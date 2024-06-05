@@ -13,7 +13,7 @@ export async function run(interaction) {
         .setTimestamp()
         .setFooter({ text: 'Bot made by Omega172' });
 
-    await interaction.channel.send({ embeds: [Embed] });
+    await interaction.reply({ embeds: [Embed] });
 }
 
 export var data = new SlashCommandBuilder()
