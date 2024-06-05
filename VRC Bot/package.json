@@ -1,0 +1,17 @@
+{
+  "name": "vrc-bot",
+  "version": "1.0.0",
+  "description": "A bot that interfaces with the VRChat API and Discord to allow for linking accounts and verification in a Discord server",
+  "main": "Main.js",
+  "scripts": {
+    "test": "node --no-warnings=ExperimentalWarning Main.mjs"
+  },
+  "author": "Omega172",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "discord.js": "^14.15.2",
+    "totp-generator": "^1.0.0",
+    "vrchat": "^1.17.3"
+  }
+}
