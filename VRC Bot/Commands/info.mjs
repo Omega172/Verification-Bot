@@ -13,15 +13,7 @@ export async function run(interaction) {
         .setTimestamp()
         .setFooter({ text: 'Bot made by Omega172' });
 
-    const create = new ButtonBuilder()
-        .setCustomId('CreateVerificationTicket')
-        .setLabel('Create Ticket')
-        .setStyle(ButtonStyle.Secondary);
-
-    const Row = new ActionRowBuilder()
-        .addComponents(create);
-
-    await interaction.channel.send({ embeds: [Embed], components: [Row] });
+    await interaction.channel.send({ embeds: [Embed] });
 }
 
 export var data = new SlashCommandBuilder()
