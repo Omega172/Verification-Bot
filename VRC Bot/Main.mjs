@@ -158,7 +158,7 @@ client.on(Events.InteractionCreate, async interaction => {
         } catch (error) {
             console.log(`Error: ${error}`);
             sendErrorMessage(`Error: ${error}`);
-            interaction.channel.send({ content: error, ephemeral: true })
+            interaction.channel.send({ content: `Error: ${error}`, ephemeral: true })
             await interaction.editReply({ content: 'There was an error while executing this function!', ephemeral: true });
         }
     }
@@ -177,7 +177,7 @@ client.on(Events.InteractionCreate, async interaction => {
             return;
         } catch (error) {
             console.log(`Error: ${error}`);
-            interaction.channel.send({ content: error, ephemeral: true })
+            interaction.channel.send({ content: `Error: ${error}`, ephemeral: true })
             await interaction.editReply({ content: 'There was an error while executing this command!', ephemeral: true });
         }
     }
