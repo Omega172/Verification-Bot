@@ -82,14 +82,14 @@ client.on(Events.ShardResume, async => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
-    await interaction.deferReply({ephemeral: true });
     if (interaction.isModalSubmit()) {
+        await interaction.deferReply({ephemeral: true });
         const profileLink = interaction.fields.getTextInputValue('profileLink');
 
         // Validate link
         const compare = "https://vrchat.com/home/user"
         if (profileLink.slice(0, profileLink.lastIndexOf("/")) != compare) {
-            return interaction.reply({ content: `Please provide a valid link. Ex. \`https://vrchat.com/home/user/usr_eaa83ece-0d44-406c-99a2-879955bbc454\``, ephemeral: true });
+            return interaction.editReply({ content: `Please provide a valid link. Ex. \`https://vrchat.com/home/user/usr_eaa83ece-0d44-406c-99a2-879955bbc454\``, ephemeral: true });
         }
 
         const Embed = EmbedBuilder.from(await interaction.message.embeds[0]).setFields(
@@ -147,8 +147,7 @@ client.on(Events.InteractionCreate, async interaction => {
         const inter = client.interactions.get(interaction.customId);
 
         if (!inter) {
-            console.log(`Error: No interaction matching ${interaction.customId} was found.`)
-            interaction.channel.send({ content: `Error: No interaction matching ${interaction.customId} was found.`, ephemeral: true })
+            console.log(`Error: No interaction matching ${interaction.customId} was found.`);
             interaction.editReply({ content: 'There was an error while executing this function!', ephemeral: true });
             return;
         }
@@ -158,7 +157,6 @@ client.on(Events.InteractionCreate, async interaction => {
         } catch (error) {
             console.log(`Error: ${error}`);
             sendErrorMessage(`Error: ${error}`);
-            interaction.channel.send({ content: `Error: ${error}`, ephemeral: true })
             await interaction.editReply({ content: 'There was an error while executing this function!', ephemeral: true });
         }
     }
@@ -168,7 +166,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
         if (!command) {
             console.log(`Error: No command matching ${interaction.commandName} was found.`)
-            interaction.channel.send({ content: `Error: No command matching ${interaction.commandName} was found.`, ephemeral: true })
             interaction.editReply({ content: 'There was an error while executing this command!', ephemeral: true });
             return;
         }
@@ -177,7 +174,6 @@ client.on(Events.InteractionCreate, async interaction => {
             return;
         } catch (error) {
             console.log(`Error: ${error}`);
-            interaction.channel.send({ content: `Error: ${error}`, ephemeral: true })
             await interaction.editReply({ content: 'There was an error while executing this command!', ephemeral: true });
         }
     }

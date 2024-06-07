@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ButtonBuilder, ActionRowBuilder, ButtonStyle } from 'discord.js';
 
 export async function run(interaction) {
-    await interaction.reply(".");
+    await interaction.editReply(".");
     await interaction.deleteReply()
 
     const embed = new EmbedBuilder()
