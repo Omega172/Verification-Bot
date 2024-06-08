@@ -84,63 +84,69 @@ client.on(Events.ShardResume, async => {
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isModalSubmit()) {
         await interaction.deferReply({ephemeral: true });
-        const profileLink = interaction.fields.getTextInputValue('profileLink');
+        try {
+            const profileLink = interaction.fields.getTextInputValue('profileLink');
 
-        // Validate link
-        const compare = "https://vrchat.com/home/user"
-        if (profileLink.slice(0, profileLink.lastIndexOf("/")) != compare) {
-            return interaction.editReply({ content: `Please provide a valid link. Ex. \`https://vrchat.com/home/user/usr_eaa83ece-0d44-406c-99a2-879955bbc454\``, ephemeral: true });
-        }
-
-        const Embed = EmbedBuilder.from(await interaction.message.embeds[0]).setFields(
-            { name: interaction.message.embeds[0].fields[0].name, value: interaction.message.embeds[0].fields[0].value },
-            { name: "Profile Link", value: profileLink },
-            { name: "VRC UserID", value: parseUserID(profileLink)}
-        );
-
-        let user = null;
-        const allMembers = await interaction.guild.members.fetch();
-        allMembers.forEach(m => {
-            if (m.id == interaction.message.embeds[0].fields[0].value) {
-                user = m;
+            // Validate link
+            const compare = "https://vrchat.com/home/user"
+            if (profileLink.slice(0, profileLink.lastIndexOf("/")) != compare) {
+                return interaction.editReply({ content: `Please provide a valid link. Ex. \`https://vrchat.com/home/user/usr_eaa83ece-0d44-406c-99a2-879955bbc454\``, ephemeral: true });
             }
-        });
 
-        if (!user) {
-            try {
-            interaction.message.delete();
-            } catch(error) {
-                console.log(`Failed to delete message: ${interaction.message.id}`);
-                sendErrorMessage(`Failed to delete message: ${interaction.message.id}`);
+            const Embed = EmbedBuilder.from(await interaction.message.embeds[0]).setFields(
+                { name: interaction.message.embeds[0].fields[0].name, value: interaction.message.embeds[0].fields[0].value },
+                { name: "Profile Link", value: profileLink },
+                { name: "VRC UserID", value: parseUserID(profileLink)}
+            );
+
+            let user = null;
+            const allMembers = await interaction.guild.members.fetch();
+            allMembers.forEach(m => {
+                if (m.id == interaction.message.embeds[0].fields[0].value) {
+                    user = m;
+                }
+            });
+
+            if (!user) {
+                try {
+                interaction.message.delete();
+                } catch(error) {
+                    console.log(`Failed to delete message: ${interaction.message.id}`);
+                    sendErrorMessage(`Failed to delete message: ${interaction.message.id}`);
+                }
+                return interaction.editReply({ content: `Failed to get handle to user`, ephemeral: true });
             }
-            return interaction.editReply({ content: `Failed to get handle to user`, ephemeral: true });
+            const isVerified = interaction.member.roles.cache.some(r => r.id == config.discord.verifiedRoles[0]);
+
+            const VerifyButton = new ButtonBuilder()
+                .setCustomId('Verify')
+                .setLabel('Verify User')
+                .setStyle(ButtonStyle.Secondary);
+
+            const VerifyPlusButton = new ButtonBuilder()
+                .setCustomId('VerifyPlus')
+                .setLabel('Verify Plus User')
+                .setStyle(ButtonStyle.Primary);
+
+            const CloseTicketButton = new ButtonBuilder()
+                .setCustomId('CloseTicket')
+                .setLabel('Close Ticket')
+                .setStyle(ButtonStyle.Danger);
+
+            const Row = new ActionRowBuilder();
+            if (!isVerified) {
+                    Row.addComponents(VerifyButton, VerifyPlusButton, CloseTicketButton);
+            } else {
+                Row.addComponents(VerifyPlusButton, CloseTicketButton);
+            }
+            
+            interaction.message.edit({ embeds: [Embed], components: [Row]});
+            interaction.editReply("Thank you for providing the needed information, a staff member will be with you as soon as possible!");
+        } catch(error) {
+            console.log(`Error: ${error}`);
+            sendErrorMessage(`Error: ${error}`);
+            await interaction.editReply({ content: 'There was an error while executing this function!', ephemeral: true });
         }
-        const isVerified = interaction.member.roles.cache.some(r => r.id == config.discord.verifiedRoles[0]);
-
-        const VerifyButton = new ButtonBuilder()
-            .setCustomId('Verify')
-            .setLabel('Verify User')
-            .setStyle(ButtonStyle.Secondary);
-
-        const VerifyPlusButton = new ButtonBuilder()
-            .setCustomId('VerifyPlus')
-            .setLabel('Verify Plus User')
-            .setStyle(ButtonStyle.Primary);
-
-        const CloseTicketButton = new ButtonBuilder()
-            .setCustomId('CloseTicket')
-            .setLabel('Close Ticket')
-            .setStyle(ButtonStyle.Danger);
-
-        const Row = new ActionRowBuilder();
-        if (!isVerified) {
-                Row.addComponents(VerifyButton, VerifyPlusButton, CloseTicketButton);
-        } else {
-            Row.addComponents(VerifyPlusButton, CloseTicketButton);
-        }
-        
-        interaction.message.edit({ embeds: [Embed], components: [Row]});
-        interaction.editReply("Thank you for providing the needed information, a staff member will be with you as soon as possible!");
     }
 
     if (interaction.isButton()) {
