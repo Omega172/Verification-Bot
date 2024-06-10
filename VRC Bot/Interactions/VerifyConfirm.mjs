@@ -4,12 +4,12 @@ import vrchat from 'vrchat'
 
 export async function run(interaction) {
     function sendErrorMessage(msg) {
-        const channel = client.channels.cache.get(config.discord.errorsID);
+        const channel = interaction.client.channels.cache.get(config.discord.errorsID);
         if (channel) {
             channel.send(msg);
         }
     }
-    await interaction.deferReply({ephemeral: true });
+    await interaction.deferReply({ephemeral: false });
 
     if (!interaction.member.roles.cache.some(r => config.discord.staffRoles.includes(r.id))) {
         sendErrorMessage(`This dumbass <@${interaction.member.id}> probably tried to verify their self LMFAO!!`);

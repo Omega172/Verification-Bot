@@ -196,7 +196,7 @@ client.on(Events.MessageCreate, async message => {
             }
         }
     } catch (error) {
-        console.log(`Error Ln. 545: ${error}`);
+        sendErrorMessage(`Error: ${error}`);
     }
 
     try { // Add verified role if a verified plus user does not have it
@@ -209,7 +209,7 @@ client.on(Events.MessageCreate, async message => {
             }
         }
     } catch (error) {
-        console.log(`Error Ln. 558: ${error}`);
+        sendErrorMessage(`Error: ${error}`);
     }
 
     if (message.channel.parentId == config.discord.nsfwID) {

@@ -3,7 +3,7 @@ import { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from "disc
 
 export async function run(interaction) {
     function sendErrorMessage(msg) {
-        const channel = client.channels.cache.get(config.discord.errorsID);
+        const channel = interaction.client.channels.cache.get(config.discord.errorsID);
         if (channel) {
             channel.send(msg);
         }
