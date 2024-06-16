@@ -1,6 +1,67 @@
 import config from "./config.json" assert { type: 'json' }
-import { TOTP } from "totp-generator";
-import vrchat from 'vrchat'
+import https from 'https';
+
+async function GetToken(ResponseCallback) {
+    const Request = https.get(`https://spotify-visualiser.vercel.app/api/refresh?refresh_token=${config.spotify.Key}`, (Response) => {
+        Response.setEncoding('utf8');
+
+        let Data = '';
+        Response.on('data', (Chunk) => {
+            Data += Chunk;
+        });
+
+        Response.on('end', () => {
+            if (Response.statusCode == 200)
+                ResponseCallback(JSON.parse(Data)['access_token']);
+        });
+    });
+
+    Request.on('error', (Error) => {
+        console.log(`Error: ${Error}`);
+    });
+
+    Request.end();
+}
+
+async function GetSongData(SpotifyToken, ResponseCallback) {
+    const Options = {
+        host: 'api.spotify.com',
+        path: '/v1/me/player/currently-playing',
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SpotifyToken}`
+        }
+    };
+
+    const Request = https.request(Options, (Response) => {
+        Response.setEncoding('utf8');
+
+        let Data = '';
+        Response.on('data', (Chunk) => {
+            Data += Chunk;
+        });
+
+        Response.on('end', () => {
+            if (Response.statusCode == 200) {
+                if (Data == '') {
+                    return ResponseCallback('Error');
+                }
+
+                return ResponseCallback(JSON.parse(Data)['item']['external_urls']['spotify']);
+            }
+
+            return ResponseCallback('Error');
+        });
+    });
+
+    Request.on('error', (Error) => {
+        console.log(`Error: ${Error}`);
+    });
+
+    Request.end();
+}
 
 import fs from "node:fs";
 import { Client, Collection, Events, IntentsBitField, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
@@ -154,7 +215,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
         if (!inter) {
             console.log(`Error: No interaction matching ${interaction.customId} was found.`);
-            interaction.editReply({ content: 'There was an error while executing this function!', ephemeral: true });
+            interaction.reply({ content: 'There was an error while executing this function!', ephemeral: true });
             return;
         }
         try {
@@ -163,7 +224,7 @@ client.on(Events.InteractionCreate, async interaction => {
         } catch (error) {
             console.log(`Error: ${error}`);
             sendErrorMessage(`Error: ${error}`);
-            await interaction.editReply({ content: 'There was an error while executing this function!', ephemeral: true });
+            await interaction.reply({ content: 'There was an error while executing this function!', ephemeral: true });
         }
     }
 
@@ -213,9 +274,22 @@ client.on(Events.MessageCreate, async message => {
     }
 
     if (message.channel.parentId == config.discord.nsfwID) {
-        if (message.content == "What is love?") {
+        if (message.content.toLowerCase() == "what is love?") {
             message.reply("Baby, don't hurt me");
             return;
+        }
+
+        if (message.content.toLowerCase() == "what is omega listening to?") {
+            GetToken((SpotifyToken) => {
+                GetSongData(SpotifyToken, (Data) => {
+                    if (Data == 'Error') {
+                        return message.reply('Omega is not listening to anything at the moment.');
+                    }
+            
+                    message.reply(`Omega is currently listening to: ${Data}`);
+                    return;
+                });
+            });
         }
 
         if (message.content == "Never gonna give you up") {
@@ -262,11 +336,27 @@ They grab a byte.`,
             `    Why couldn’t the programmer dance to the song?
 
 Because he didn’t get the… algo-rhythm…`,
-            `Oh look at the cute bottom, aren't you such a good bottom!`
+            `Oh look at the cute bottom, aren't you such a good bottom!`,
+            'SONG'
         ]
         
         if (message.content == "<@730123783557480545>") {
             var phrase = phrases[Math.floor(Math.random()*phrases.length)];
+
+            if (phrase == 'SONG') {
+                GetToken((SpotifyToken) => {
+                    GetSongData(SpotifyToken, (Data) => {
+                        if (Data == 'Error') {
+                            return message.reply('Omega is not listening to anything at the moment.');
+                        }
+                
+                        message.reply(`Omega is currently listening to: ${Data}`);
+                        return;
+                    });
+                });
+                return;
+            }
+
             message.reply(phrase);
             return;
         }
