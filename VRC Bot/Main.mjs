@@ -303,42 +303,77 @@ client.on(Events.MessageCreate, async message => {
         }
 
         let phrases = [ 
-            `Where da hoes at? https://tenor.com/view/where-where-at-sponge-bob-gif-6060104`,
-            `Have you met my master <@583327588576002048>? He is a pretty cool dude!`,
-            `WHO THE FUCK PINGED ME?!?!?!!`,
-            `You must really be desperate for attention if you're pinging me. But do you deserve my attention? Have you been a good \`[term conforming to your gender identity]\`?`,
-            `SILENCE I KILL YOU https://tenor.com/view/achmed-i-kill-you-silence-puppet-gif-17394722`,
-            `Check out <@583327588576002048>'s Throwback Jams playlist on Spotify: https://open.spotify.com/playlist/3eUKTe2QLZrgdpS9ktGWjk?si=3e444ce5ed884ba8`,
-            `Womp, Womp!`,
-            `Bark, Bark!`,
-            `Meow :3`,
-            `Time to commit some arson! https://tenor.com/view/rage-mad-elmo-fire-on-on-flame-gif-15124372`,
-            `https://tenor.com/view/cats-meow-markiplier-funny-gif-13429113`,
-            `https://tenor.com/view/hop-on-vrchat-gif-24939774`,
-            `https://tenor.com/view/basil-omori-sunny-omori-omori-vr-chat-hop-on-gif-13643522305041950462`,
-            `https://tenor.com/view/confused-confused-face-confused-look-im-confused-im-so-confused-gif-16067865999736184254`,
-            `https://tenor.com/view/moo-cows-cow-markiplier-funny-gif-18061291`,
+            `Where da hoes at? https://tenor.com/view/where-where-at-sponge-bob-gif-6060104`, // 0
+            `Have you met my master <@583327588576002048>? He is a pretty cool dude!`, // 1
+            `WHO THE FUCK PINGED ME?!?!?!!`, // 2
+            `You must really be desperate for attention if you're pinging me. But do you deserve my attention? Have you been a good \`[term conforming to your gender identity]\`?`, // 3
+            `SILENCE I KILL YOU https://tenor.com/view/achmed-i-kill-you-silence-puppet-gif-17394722`, // 4
+            `Check out <@583327588576002048>'s Throwback Jams playlist on Spotify: https://open.spotify.com/playlist/3eUKTe2QLZrgdpS9ktGWjk?si=3e444ce5ed884ba8`, // 5
+            `Womp, Womp!`, // 6
+            `Bark, Bark!`, // 7
+            `Meow :3`, // 8
+            `Time to commit some arson! https://tenor.com/view/rage-mad-elmo-fire-on-on-flame-gif-15124372`, // 9
+            `https://tenor.com/view/cats-meow-markiplier-funny-gif-13429113`, // 10
+            `https://tenor.com/view/hop-on-vrchat-gif-24939774`, // 11
+            `https://tenor.com/view/basil-omori-sunny-omori-omori-vr-chat-hop-on-gif-13643522305041950462`, // 12
+            `https://tenor.com/view/confused-confused-face-confused-look-im-confused-im-so-confused-gif-16067865999736184254`, // 13
+            `https://tenor.com/view/moo-cows-cow-markiplier-funny-gif-18061291`, // 14
+            
+            // 15
             ` Cock and ball torture From Wikipedia, the free encyclopedia at en.wikipedia.org
             
 Cock and ball torture (CBT) is a sexual activity involving application of pain or constriction to the male genitals. This may involve directly painful activities, such as genital piercing, wax play, genital spanking, squeezing, ball-busting, genital flogging, urethral play, tickle torture, erotic electrostimulation or even kicking. The recipient of such activities may receive direct physical pleasure via masochism, or knowledge that the play is pleasing to a sadistic dominant.`,
+                       
+            // 16
             `Own a musket for home defense, since that's what the founding fathers intended. Four ruffians break into my house. "What the devil?" As I grab my powdered wig and Kentucky rifle. Blow a golf ball sized hole through the first man, he's dead on the spot. Draw my pistol on the second man, miss him entirely because it's smoothbore and nails the neighbors dog. I have to resort to the cannon mounted at the top of the stairs loaded with grape shot, "Tally ho lads" the grape shot shreds two men in the blast, the sound and extra shrapnel set off car alarms. Fix bayonet and charge the last terrified rapscallion. He Bleeds out waiting on the police to arrive since triangular bayonet wounds are impossible to stitch up. Just as the founding fathers intended.`,
-            `https://tenor.com/view/madagascar-eyebrows-eyes-ya-sexy-son-of-a-bitch-gif-17798088`,
-            `https://tenor.com/view/larry-curly-moe-three-stooges-gif-11650174`,
+            `https://tenor.com/view/madagascar-eyebrows-eyes-ya-sexy-son-of-a-bitch-gif-17798088`, // 17
+            `https://tenor.com/view/larry-curly-moe-three-stooges-gif-11650174`, // 18
             `I used to work as a programmer for autocorrect….
 
-            Then they fried me for no raisin.`,
+            Then they fried me for no raisin.`,  // 19
             `    Why do programmers like dark mode?
 
-Because light attracts bugs.`,
+Because light attracts bugs.`, // 20
             `What do programmers do when they’re hungry?
 
-They grab a byte.`,
+They grab a byte.`, // 21
             `    Why couldn’t the programmer dance to the song?
 
-Because he didn’t get the… algo-rhythm…`,
-            `Oh look at the cute bottom, aren't you such a good bottom!`,
-            'SONG'
+Because he didn’t get the… algo-rhythm…`, // 22
+            `Oh look at the cute bottom, aren't you such a good bottom!`, // 23
+            'SONG' // 24
         ]
+
+        if (message.content.startsWith("<@730123783557480545> phrase")) {
+            const msg = message.content;
+            const tokens = msg.split(" ");
+
+            if (tokens.length > 3) {
+                message.reply(`No phrase index supplied`);
+                return;
+            }
+
+            if (isNaN(tokens[2])) {
+                message.reply(`${tokens[2]} is not a number`);
+                return;
+            }
+
+            const index = tokens[2];
+            if (index < 0 || index > (phrases.length - 1)) {
+                message.reply(`${index} is not a valid phrase index, please use a number between 0 and ${(phrases.length - 1)}`);
+                return;
+            }
+
+            message.reply(phrases[index]);
+
+            try {
+                message.delete();
+            } catch(Error) {
+                console.log(`Error: ${Error}`);
+            }
+
+            return;
+        }
         
         if (message.content == "<@730123783557480545>") {
             var phrase = phrases[Math.floor(Math.random()*phrases.length)];
