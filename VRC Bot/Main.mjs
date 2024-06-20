@@ -1,183 +1,97 @@
-import config from "./config.json" assert { type: 'json' }
-import https from 'https';
-
-async function GetToken(ResponseCallback) {
-    const Request = https.get(`https://spotify-visualiser.vercel.app/api/refresh?refresh_token=${config.spotify.Key}`, (Response) => {
-        Response.setEncoding('utf8');
-
-        let Data = '';
-        Response.on('data', (Chunk) => {
-            Data += Chunk;
-        });
-
-        Response.on('end', () => {
-            if (Response.statusCode == 200)
-                ResponseCallback(JSON.parse(Data)['access_token']);
-        });
-    });
-
-    Request.on('error', (Error) => {
-        console.log(`Error: ${Error}`);
-    });
-
-    Request.end();
-}
-
-async function GetSongData(SpotifyToken, ResponseCallback) {
-    const Options = {
-        host: 'api.spotify.com',
-        path: '/v1/me/player/currently-playing',
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${SpotifyToken}`
-        }
-    };
-
-    const Request = https.request(Options, (Response) => {
-        Response.setEncoding('utf8');
-
-        let Data = '';
-        Response.on('data', (Chunk) => {
-            Data += Chunk;
-        });
-
-        Response.on('end', () => {
-            if (Response.statusCode == 200) {
-                if (Data == '') {
-                    return ResponseCallback('Error');
-                }
-
-                return ResponseCallback(JSON.parse(Data)['item']['external_urls']['spotify']);
-            }
-
-            return ResponseCallback('Error');
-        });
-    });
-
-    Request.on('error', (Error) => {
-        console.log(`Error: ${Error}`);
-    });
-
-    Request.end();
-}
-
-import fs from "node:fs";
+import Config from "./Config.json" assert { type: 'json' }
+import { GetToken, GetSongData } from "./Spotify/Spotify.mjs"
 import { Client, Collection, Events, IntentsBitField, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 
-const myIntents = new IntentsBitField();
-myIntents.add(IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMembers, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.MessageContent);
-const client = new Client({intents: [myIntents] });
+const Intents = (new IntentsBitField()).add(IntentsBitField.Flags.Guilds, IntentsBitField.Flags.GuildMembers, IntentsBitField.Flags.GuildMessages, IntentsBitField.Flags.MessageContent);
+const DiscordClient = new Client({intents: [Intents] });
 
-client.commands = new Collection;
-fs.readdir("./Commands", (err, files) => {
-    if (err) console.log(err);
-    let jsfile = files.filter(f => f.split(".").pop() === "mjs")
+function SendErrorMessage(Message) {
+    console.log(Message);
+    const Channel = DiscordClient.channels.cache.get(Config.Discord.ErrorsID);
+    if (Channel) {
+        Channel.send(Message);
+    }
+
+    return;
+}
+
+import FS from "node:fs";
+DiscordClient.Commands = new Collection;
+FS.readdir("./Commands", (Error, Files) => {
+    if (Error) {
+        console.log(`Error: ${Error}`);
+    }
+
+    let JSFile = Files.filter(f => f.split(".").pop() === "mjs")
     
-    if (jsfile.legnth <= 0) {
+    if (JSFile.legnth <= 0) {
         console.log("Couldnt find any command files.");
     }
     
-    jsfile.forEach(async (f, i) =>{
-        const command = await import(`./Commands/${f}`);
+    JSFile.forEach(async (f, i) =>{
+        const Command = await import(`./Commands/${f}`);
         console.log(`Command ${f} loaded!`);
-        client.commands.set(command.data.name.toLowerCase(), command);
+        DiscordClient.Commands.set(Command.Name.toLowerCase(), Command);
     });
 });
 
-client.interactions = new Collection;
-fs.readdir("./Interactions", (err, files) => {
-    if (err) console.log(err);
-    let jsfile = files.filter(f => f.split(".").pop() === "mjs")
+DiscordClient.Interactions = new Collection;
+FS.readdir("./Interactions", (Error, Files) => {
+    if (Error) {
+        console.log(`Error: ${Error}`);
+    }
+
+    let JSFile = Files.filter(f => f.split(".").pop() === "mjs")
     
-    if (jsfile.legnth <= 0) {
+    if (JSFile.legnth <= 0) {
         console.log("Couldnt find any interaction files.");
     }
     
-    jsfile.forEach(async (f, i) =>{
-        const interaction = await import(`./Interactions/${f}`);
+    JSFile.forEach(async (f, i) =>{
+        const Interaction = await import(`./Interactions/${f}`);
         console.log(`Interaction ${f} loaded!`);
-        client.interactions.set(f.split(".")[0], interaction);
+        DiscordClient.Interactions.set(Interaction.Name, Interaction);
     });
 });
 
-function parseUserID(profileLink) {
-    const tokens = profileLink.split("/");
-    return tokens[tokens.length - 1];
-}
-
-function sendErrorMessage(msg) {
-    const channel = client.channels.cache.get(config.discord.errorsID);
-    if (channel) {
-        channel.send(msg);
-    }
-}
-
-client.once(Events.ClientReady, client => {
-    console.log(`Client ready, logged in as ${client.user.tag}`);
-    sendErrorMessage(`I am online and ready to FUCKING PARTY!!!`);
+DiscordClient.once(Events.ClientReady, () => {
+    SendErrorMessage(`I am online as ${DiscordClient.user.tag} and ready to FUCKING PARTY!!!`);
 });
 
-client.on(Events.ShardDisconnect, aysnc => {
-    console.log(`Client lost connection!`);
-});
-
-let timestamp = 0;
-client.on(Events.ShardReconnecting, async => {
-    if (timestamp == 0) {
-        console.log(`Client reconnecting...`);
-        timestamp = Math.floor(Date.now() / 1000);
-    }
-});
-
-client.once(Events.ShardReady, async => {
-    console.log(`Main client Shard is ready!`);
-    sendErrorMessage(`Client shard initalized, finalizing bot startup.`);
-});
-
-client.on(Events.ShardResume, async => {
-    console.log(`Client shard reconnected!`);
-    sendErrorMessage(`I lost connection at <t:${timestamp}>, but now I am back bitches! https://cdn.discordapp.com/attachments/1182430524380295270/1247297353673871491/3fff923aba6a5f771c82fbf31cbd2bec5de3936e.jpeg?ex=665f83ae&is=665e322e&hm=194d240d9671d7dfd0e5896101731c44b0b0a62d7e74d9d20ee4ac02439ec2d9&`);
-    timestamp = 0;
-});
-
-client.on(Events.InteractionCreate, async interaction => {
-    if (interaction.isModalSubmit()) {
-        await interaction.deferReply({ephemeral: true });
+DiscordClient.on(Events.InteractionCreate, async (Interaction) => {
+    if (Interaction.isModalSubmit()) {
+        await Interaction.deferReply({ephemeral: true });
         try {
-            const profileLink = interaction.fields.getTextInputValue('profileLink');
+            const ProfileLink = Interaction.fields.getTextInputValue('profileLink');
 
-            // Validate link
-            const compare = "https://vrchat.com/home/user"
-            if (profileLink.slice(0, profileLink.lastIndexOf("/")) != compare) {
-                return interaction.editReply({ content: `Please provide a valid link. Ex. \`https://vrchat.com/home/user/usr_eaa83ece-0d44-406c-99a2-879955bbc454\``, ephemeral: true });
+            if (ProfileLink.slice(0, ProfileLink.lastIndexOf("/")) != "https://vrchat.com/home/user") {
+                return Interaction.editReply({ content: `Please provide a valid link. Ex. \`https://vrchat.com/home/user/usr_eaa83ece-0d44-406c-99a2-879955bbc454\``, ephemeral: true });
             }
 
-            const Embed = EmbedBuilder.from(await interaction.message.embeds[0]).setFields(
-                { name: interaction.message.embeds[0].fields[0].name, value: interaction.message.embeds[0].fields[0].value },
-                { name: "Profile Link", value: profileLink },
-                { name: "VRC UserID", value: parseUserID(profileLink)}
+            const Tokens = ProfileLink.split("/");
+            const Embed = EmbedBuilder.from(await Interaction.message.embeds[0]).setFields(
+                { name: Interaction.message.embeds[0].fields[0].name, value: Interaction.message.embeds[0].fields[0].value },
+                { name: "Profile Link", value: ProfileLink },
+                { name: "VRC UserID", value: Tokens[Tokens.length - 1]}
             );
 
-            let user = null;
-            const allMembers = await interaction.guild.members.fetch();
-            allMembers.forEach(m => {
-                if (m.id == interaction.message.embeds[0].fields[0].value) {
-                    user = m;
+            let User = null;
+            const AllMembers = await Interaction.guild.members.fetch();
+            AllMembers.forEach(Member => {
+                if (Member.id == Interaction.message.embeds[0].fields[0].value) {
+                    User = Member;
                 }
             });
 
-            if (!user) {
+            if (!User) {
                 try {
-                interaction.message.delete();
+                Interaction.message.delete();
                 } catch(error) {
-                    console.log(`Failed to delete message: ${interaction.message.id}`);
-                    sendErrorMessage(`Failed to delete message: ${interaction.message.id}`);
+                    SendErrorMessage(`Failed to delete message: ${Interaction.message.id}`);
                 }
-                return interaction.editReply({ content: `Failed to get handle to user`, ephemeral: true });
+                return Interaction.editReply({ content: `Failed to get handle to user`, ephemeral: true });
             }
-            const isVerified = interaction.member.roles.cache.some(r => r.id == config.discord.verifiedRoles[0]);
+            const IsVerified = Interaction.member.roles.cache.some(Role => Role.id == Config.Discord.VerifiedRoles[0]);
 
             const VerifyButton = new ButtonBuilder()
                 .setCustomId('Verify')
@@ -195,114 +109,112 @@ client.on(Events.InteractionCreate, async interaction => {
                 .setStyle(ButtonStyle.Danger);
 
             const Row = new ActionRowBuilder();
-            if (!isVerified) {
+            if (!IsVerified) {
                     Row.addComponents(VerifyButton, VerifyPlusButton, CloseTicketButton);
             } else {
                 Row.addComponents(VerifyPlusButton, CloseTicketButton);
             }
             
-            interaction.message.edit({ embeds: [Embed], components: [Row]});
-            interaction.editReply("Thank you for providing the needed information, a staff member will be with you as soon as possible!");
-        } catch(error) {
-            console.log(`Error: ${error}`);
-            sendErrorMessage(`Error: ${error}`);
-            await interaction.editReply({ content: 'There was an error while executing this function!', ephemeral: true });
+            Interaction.message.edit({ embeds: [Embed], components: [Row]});
+            Interaction.editReply("Thank you for providing the needed information, a staff member will be with you as soon as possible!");
+        } catch(Error) {
+            SendErrorMessage(`Error: ${Error}`);
+            await Interaction.editReply({ content: 'There was an error while executing this function!', ephemeral: true });
         }
     }
 
-    if (interaction.isButton()) {
-        const inter = client.interactions.get(interaction.customId);
+    if (Interaction.isButton()) {        
+        const StoredInteraction = DiscordClient.Interactions.get(Interaction.customId);
 
-        if (!inter) {
-            console.log(`Error: No interaction matching ${interaction.customId} was found.`);
-            interaction.reply({ content: 'There was an error while executing this function!', ephemeral: true });
+        if (!StoredInteraction) {
+            console.log(`Error: No Interaction matching ${Interaction.customId} was found.`);
+            Interaction.reply({ content: 'There was an error while executing this function!', ephemeral: true });
             return;
         }
         try {
-            await inter.run(interaction);
+            await StoredInteraction.Run(Interaction);
             return;
-        } catch (error) {
-            console.log(`Error: ${error}`);
-            sendErrorMessage(`Error: ${error}`);
-            await interaction.reply({ content: 'There was an error while executing this function!', ephemeral: true });
+        } catch (Error) {
+            SendErrorMessage(`Error: ${Error}`);
+            await Interaction.reply({ content: 'There was an error while executing this function!', ephemeral: true });
         }
     }
 
-    if (interaction.isChatInputCommand()) {
-	    const command = client.commands.get(interaction.commandName);
+    if (Interaction.isChatInputCommand()) {
+	    const Command = DiscordClient.commands.get(Interaction.commandName);
 
-        if (!command) {
-            console.log(`Error: No command matching ${interaction.commandName} was found.`)
-            interaction.editReply({ content: 'There was an error while executing this command!', ephemeral: true });
+        if (!Command) {
+            console.log(`Error: No command matching ${Interaction.commandName} was found.`)
+            Interaction.editReply({ content: 'There was an error while executing this command!', ephemeral: true });
             return;
         }
         try {
-            await command.run(interaction);
+            await Command.Run(Interaction);
             return;
-        } catch (error) {
-            console.log(`Error: ${error}`);
-            await interaction.editReply({ content: 'There was an error while executing this command!', ephemeral: true });
+        } catch (Error) {
+            console.log(`Error: ${Error}`);
+            await Interaction.editReply({ content: 'There was an error while executing this command!', ephemeral: true });
         }
     }
 });
 
-client.on(Events.MessageCreate, async message => {
+DiscordClient.on(Events.MessageCreate, async (Message) => {
     try { // Remove Unverified role if a user is verified
-        const isVerified = message.member.roles.cache.some(r => config.discord.verifiedRoles.includes(r.id));
-        if (isVerified) {
-            const hasUnverifiedRole = message.member.roles.cache.some(r => config.discord.unverifiedRoles.includes(r.id));
-            if (hasUnverifiedRole) {
-                message.member.roles.remove(config.discord.unverifiedRoles[0]);
-                console.log(`Removed Unverified role from ${message.member.displayName}`);
+        const IsVerified = Message.member.roles.cache.some(Role => Config.Discord.VerifiedRoles.includes(Role.id));
+        if (IsVerified) {
+            const HasUnverifiedRole = Message.member.roles.cache.some(Role => Config.Discord.UnverifiedRoles.includes(Role.id));
+            if (HasUnverifiedRole) {
+                Message.member.roles.remove(Config.Discord.UnverifiedRoles[0]);
+                console.log(`Removed Unverified role from ${Message.member.displayName}`);
             }
         }
-    } catch (error) {
-        sendErrorMessage(`Error: ${error}`);
+    } catch (Error) {
+        SendErrorMessage(`Error: ${Error}`);
     }
 
     try { // Add verified role if a verified plus user does not have it
-        const isVerifiedPlus = message.member.roles.cache.some(r => r.id == config.discord.verifiedRoles[1]);
-        if (isVerifiedPlus) {
-            const hasVerifiedRole = message.member.roles.cache.some(r => r.id == config.discord.verifiedRoles[0]);
-            if (!hasVerifiedRole) {
-                message.member.roles.add(config.discord.verifiedRoles[0]);
-                console.log(`Added Verified role to ${message.member.displayName}`);
+        const IsVerifiedPlus = Message.member.roles.cache.some(Role => Role.id == Config.Discord.VerifiedRoles[1]);
+        if (IsVerifiedPlus) {
+            const HasUnverifiedRole = Message.member.roles.cache.some(Role => Role.id == Config.Discord.VerifiedRoles[0]);
+            if (!HasUnverifiedRole) {
+                Message.member.roles.add(Config.Discord.VerifiedRoles[0]);
+                console.log(`Added Verified role to ${Message.member.displayName}`);
             }
         }
-    } catch (error) {
-        sendErrorMessage(`Error: ${error}`);
+    } catch (Error) {
+        SendErrorMessage(`Error: ${Error}`);
     }
 
-    if (message.channel.parentId == config.discord.nsfwID) {
-        if (message.content.toLowerCase() == "what is love?") {
-            message.reply("Baby, don't hurt me");
+    if (Message.channel.parentId == Config.Discord.NSFWID) {
+        if (Message.content.toLowerCase() == "what is love?") {
+            Message.reply("Baby, don't hurt me");
             return;
         }
 
-        if (message.content.toLowerCase() == "what is omega listening to?") {
+        if (Message.content.toLowerCase() == "what is omega listening to?") {
             GetToken((SpotifyToken) => {
                 GetSongData(SpotifyToken, (Data) => {
                     if (Data == 'Error') {
-                        return message.reply('Omega is not listening to anything at the moment.');
+                        return Message.reply('Omega is not listening to anything at the moment.');
                     }
             
-                    message.reply(`Omega is currently listening to: ${Data}`);
+                    Message.reply(`Omega is currently listening to: ${Data}`);
                     return;
                 });
             });
         }
 
-        if (message.content == "Never gonna give you up") {
-            message.reply(`Never gonna let you down`);
+        if (Message.content == "Never gonna give you up") {
+            Message.reply(`Never gonna let you down`);
             return;
         }
 
-        if (message.content == "<@730123783557480545> Can you pass the Turing test?") {
-            message.reply("I plead the 5th.");
+        if (Message.content == "<@730123783557480545> Can you pass the Turing test?") {
+            Message.reply("I plead the 5th.");
             return;
         }
 
-        let phrases = [ 
+        let Phrases = [ 
             `Where da hoes at? https://tenor.com/view/where-where-at-sponge-bob-gif-6060104`, // 0
             `Have you met my master <@583327588576002048>? He is a pretty cool dude!`, // 1
             `WHO THE FUCK PINGED ME?!?!?!!`, // 2
@@ -344,30 +256,30 @@ Because he didn’t get the… algo-rhythm…`, // 22
             'SONG' // 24
         ]
 
-        if (message.content.startsWith("<@730123783557480545> phrase")) {
-            const msg = message.content;
-            const tokens = msg.split(" ");
+        if (Message.content.startsWith("<@730123783557480545> phrase")) {
+            const Msg = Message.content;
+            const Tokens = Msg.split(" ");
 
-            if (tokens.length > 3) {
-                message.reply(`No phrase index supplied`);
+            if (Tokens.length > 3) {
+                Message.reply(`No phrase index supplied`);
                 return;
             }
 
-            if (isNaN(tokens[2])) {
-                message.reply(`${tokens[2]} is not a number`);
+            if (isNaN(Tokens[2])) {
+                Message.reply(`${Tokens[2]} is not a number`);
                 return;
             }
 
-            const index = tokens[2];
-            if (index < 0 || index > (phrases.length - 1)) {
-                message.reply(`${index} is not a valid phrase index, please use a number between 0 and ${(phrases.length - 1)}`);
+            const Index = Tokens[2];
+            if (Index < 0 || Index > (Phrases.length - 1)) {
+                Message.reply(`${Index} is not a valid phrase index, please use a number between 0 and ${(Phrases.length - 1)}`);
                 return;
             }
 
-            message.reply(phrases[index]);
+            Message.reply(Phrases[Index]);
 
             try {
-                message.delete();
+                Message.delete();
             } catch(Error) {
                 console.log(`Error: ${Error}`);
             }
@@ -375,27 +287,27 @@ Because he didn’t get the… algo-rhythm…`, // 22
             return;
         }
         
-        if (message.content == "<@730123783557480545>") {
-            var phrase = phrases[Math.floor(Math.random()*phrases.length)];
+        if (Message.content == "<@730123783557480545>") {
+            var Phrase = Phrases[Math.floor(Math.random()*Phrases.length)];
 
-            if (phrase == 'SONG') {
-                GetToken((SpotifyToken) => {
+            if (Phrase == 'SONG') {
+                GetToken(Config.Spotify.Key, (SpotifyToken) => {
                     GetSongData(SpotifyToken, (Data) => {
                         if (Data == 'Error') {
-                            return message.reply('Omega is not listening to anything at the moment.');
+                            return Message.reply('Omega is not listening to anything at the moment.');
                         }
                 
-                        message.reply(`Omega is currently listening to: ${Data}`);
+                        Message.reply(`Omega is currently listening to: ${Data}`);
                         return;
                     });
                 });
                 return;
             }
 
-            message.reply(phrase);
+            Message.reply(Phrase);
             return;
         }
     }
 });
 
-client.login(config.discord.token);
+DiscordClient.login(Config.Discord.Token);

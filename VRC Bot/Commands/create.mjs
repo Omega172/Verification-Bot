@@ -1,10 +1,12 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ButtonBuilder, ActionRowBuilder, ButtonStyle } from 'discord.js';
 
-export async function run(interaction) {
-    await interaction.editReply(".");
-    await interaction.deleteReply()
+export var Name = "Create";
 
-    const embed = new EmbedBuilder()
+export async function Run(Interaction) {
+    await Interaction.editReply(".");
+    await Interaction.deleteReply()
+
+    const Embed = new EmbedBuilder()
         .setColor(0x00ffff)
         .setTitle('Verification')
         .setDescription('Create your verification ticket here')
@@ -14,18 +16,18 @@ export async function run(interaction) {
         .setTimestamp()
         .setFooter({ text: 'Bot made by Omega172' });
 
-    const create = new ButtonBuilder()
+    const Create = new ButtonBuilder()
         .setCustomId('CreateVerificationTicket')
         .setLabel('Create Ticket')
         .setStyle(ButtonStyle.Secondary);
 
-    const row = new ActionRowBuilder()
-        .addComponents(create);
+    const Row = new ActionRowBuilder()
+        .addComponents(Create);
 
-    await interaction.channel.send({ embeds: [embed], components: [row] });
+    await Interaction.channel.send({ embeds: [Embed], components: [Row] });
 }
 
-export var data = new SlashCommandBuilder()
-    .setName('create')
+export var Data = new SlashCommandBuilder()
+    .setName(Name.toLowerCase())
     .setDescription('Creates the verification embed')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);

@@ -1,7 +1,8 @@
-import config from "./../config.json" assert { type: 'json' }
-import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ButtonBuilder, ActionRowBuilder, ButtonStyle } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 
-export async function run(interaction) {
+export var Name = "Info";
+
+export async function Run(Interaction) {
     const Embed = new EmbedBuilder()
         .setColor(0x00ffff)
         .setTitle('Bot Info')
@@ -13,10 +14,10 @@ export async function run(interaction) {
         .setTimestamp()
         .setFooter({ text: 'Bot made by Omega172' });
 
-    await interaction.reply({ embeds: [Embed] });
+    await Interaction.reply({ embeds: [Embed] });
 }
 
-export var data = new SlashCommandBuilder()
-    .setName('info')
+export var Data = new SlashCommandBuilder()
+    .setName(Name.toLowerCase())
     .setDescription('Gives some info about the bot')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);

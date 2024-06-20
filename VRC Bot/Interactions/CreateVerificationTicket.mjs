@@ -1,29 +1,31 @@
-import config from "./../config.json" assert { type: 'json' }
+import Config from "./../Config.json" assert { type: 'json' }
 import { ChannelType, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js'
 
-export async function run(interaction) {
-    await interaction.deferReply({ephemeral: true });
+export var Name = "CreateVerificationTicket";
 
-    if (interaction.member.roles.cache.some(r => r.id == config.discord.verifiedRoles[1])) {
-        return interaction.editReply({ content: `You are already fully verified dummy :p`, ephemeral: true });
+export async function Run(Interaction) {
+    await Interaction.deferReply({ephemeral: true });
+
+    if (Interaction.member.roles.cache.some(Role => Role.id == Config.Discord.VerifiedRoles[1])) {
+        return Interaction.editReply({ content: `You are already fully verified dummy :p`, ephemeral: true });
     }
 
-    const ExistingTicket = interaction.guild.channels.cache.find(channel => channel.name == interaction.user.displayName.toLowerCase());
+    const ExistingTicket = Interaction.guild.channels.cache.find(channel => channel.name == Interaction.user.displayName.toLowerCase());
     if (ExistingTicket) {
-        return interaction.editReply({ content: `You already have a ticket open: <#${ExistingTicket.id}>`, ephemeral: true });;
+        return Interaction.editReply({ content: `You already have a ticket open: <#${ExistingTicket.id}>`, ephemeral: true });;
     }
 
-    let Channel = await interaction.guild.channels.create({
-        name: interaction.user.displayName,
+    let Channel = await Interaction.guild.channels.create({
+        name: Interaction.user.displayName,
         type: ChannelType.GuildText,
-        parent: config.discord.categoryID
+        parent: Config.Discord.CategoryID
     });
-    Channel.permissionOverwrites.create(interaction.user.id, { ViewChannel: true });
+    Channel.permissionOverwrites.create(Interaction.user.id, { ViewChannel: true });
 
     const TicketEmbed = new EmbedBuilder()
         .setColor(0x00ffff)
         .setTitle('Ticket Controls')
-        .addFields({ name: 'Discord UserID', value: interaction.user.id })
+        .addFields({ name: 'Discord UserID', value: Interaction.user.id })
         .setTimestamp()
         .setFooter({ text: 'Bot made by Omega172' });
 
@@ -48,13 +50,13 @@ export async function run(interaction) {
         .setStyle(ButtonStyle.Danger);
 
     const Row = new ActionRowBuilder()
-    if (!interaction.member.roles.cache.some(r => r.id == config.discord.verifiedRoles[0])) {
+    if (!Interaction.member.roles.cache.some(Role => Role.id == Config.Discord.VerifiedRoles[0])) {
         Row.addComponents(BeginButton, VerifyButton, VerifyPlusButton, CloseTicketButton);
     } else {
         Row.addComponents(BeginButton, VerifyPlusButton, CloseTicketButton);
     }
     Channel.send({ embeds: [TicketEmbed], components: [Row] });
 
-    Channel.send(`Hello, <@${interaction.user.id}> please press the \`Begin Verification\` button to start.`);
-    return interaction.editReply({ content: `Ticket created: <#${Channel.id}>`, ephemeral: true });
+    Channel.send(`Hello, <@${Interaction.user.id}> please press the \`Begin Verification\` button to start.`);
+    return Interaction.editReply({ content: `Ticket created: <#${Channel.id}>`, ephemeral: true });
 }

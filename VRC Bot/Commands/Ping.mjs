@@ -1,11 +1,13 @@
 import { SlashCommandBuilder } from 'discord.js';
 
-export async function run(interaction) {
-    await interaction.deferReply({ephemeral: true });
-	await interaction.editReply({ content: `Pong: ${interaction.client.ws.ping}ms to Discord WebSocket`, ephemeral: true });
+export var Name = "Ping";
+
+export async function Run(Interaction) {
+    await Interaction.deferReply({ephemeral: true });
+	await Interaction.editReply({ content: `Pong: ${Interaction.client.ws.ping}ms to Discord WebSocket`, ephemeral: true });
     return;
 }
 
-export var data = new SlashCommandBuilder()
-    .setName('ping')
+export var Data = new SlashCommandBuilder()
+    .setName(Name.toLowerCase())
     .setDescription('Replies with Pong!');

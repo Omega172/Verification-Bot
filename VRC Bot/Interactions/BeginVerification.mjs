@@ -1,18 +1,19 @@
 import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from "discord.js";
 
-export async function run(interaction) {
-    const modal = new ModalBuilder()
+export var Name = "BeginVerification";
+
+export async function Run(Interaction) {
+    const Modal = new ModalBuilder()
     .setCustomId('beginModal')
     .setTitle('Verification');
 
-    const linkInput = new TextInputBuilder()
+    const LinkInput = new TextInputBuilder()
         .setCustomId('profileLink')
         .setLabel("Please input your VRChat profile link")
         .setStyle(TextInputStyle.Short);
 
-    const row = new ActionRowBuilder().addComponents(linkInput);
-    modal.addComponents(row);
+    Modal.addComponents((new ActionRowBuilder()).addComponents(LinkInput));
 
-    await interaction.showModal(modal);
+    await Interaction.showModal(Modal);
     return;
 }

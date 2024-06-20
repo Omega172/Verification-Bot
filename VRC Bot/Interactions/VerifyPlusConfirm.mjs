@@ -1,50 +1,52 @@
-import config from "./../config.json" assert { type: 'json' }
+import Config from "./../Config.json" assert { type: 'json' }
 import { TOTP } from "totp-generator";
-import vrchat from 'vrchat'
+import VRChat from 'vrchat'
 
-export async function run(interaction) {
-    function sendErrorMessage(msg) {
-        const channel = interaction.client.channels.cache.get(config.discord.errorsID);
-        if (channel) {
-            channel.send(msg);
+export var Name = "VerifyPlusConfirm";
+
+export async function Run(Interaction) {
+    function SendErrorMessage(Message) {
+        console.log(Message);
+        const Channel = Interaction.client.channels.cache.get(Config.Discord.ErrorsID);
+        if (Channel) {
+            Channel.send(Message);
         }
     }
-    await interaction.deferReply({ephemeral: false });
+    await Interaction.deferReply({ephemeral: false });
 
-    if (!interaction.member.roles.cache.some(r => config.discord.staffRoles.includes(r.id))) {
-        sendErrorMessage(`This dumbass <@${interaction.member.id}> probably tried to verify their self LMFAO!!`);
-        return interaction.editReply({ content: `You do not have the perms needed to verify users`, ephemeral: true });
+    if (!Interaction.member.roles.cache.some(Role => Config.Discord.StaffRoles.includes(Role.id))) {
+        SendErrorMessage(`This dumbass <@${Interaction.member.id}> probably tried to verify their self LMFAO!!`);
+        return Interaction.editReply({ content: `You do not have the perms needed to verify users`, ephemeral: true });
     }
 
-    if (interaction.message.embeds[0].fields.length < 3) {
-        return interaction.editReply({ content: `User has not provided the needed information to auto verify`, ephemeral: true });
+    if (Interaction.message.embeds[0].fields.length < 3) {
+        return Interaction.editReply({ content: `User has not provided the needed information to auto verify`, ephemeral: true });
     }
     
-    const creds = new vrchat.Configuration({
-        username: config.auth.Username,
-        password: config.auth.Password,
+    const Credentials = new VRChat.Configuration({
+        username: Config.Auth.Username,
+        password: Config.Auth.Password,
         baseOptions: {
             headers: {
-                "User-Agent": config.auth.UserAgent,
+                "User-Agent": Config.Auth.UserAgent,
             }
         }
     });
     
-    function getOTP() {
-        const { otp } = TOTP.generate(config.auth.TOTPSecret);
-    
-        return otp;
+    function GetOTP() {
+        const { OTP } = TOTP.generate(Config.Auth.TOTPSecret);
+        return OTP;
     }
     
-    async function getSession() {
-        const authAPI = new vrchat.AuthenticationApi(creds);
+    async function GetSession() {
+        const AuthAPI = new VRChat.AuthenticationApi(Credentials);
     
-        const res = await authAPI.getCurrentUser();
-        if (res.status == 200) {
-            if (res.data.requiresTwoFactorAuth) {
-                const OTP = getOTP();
+        const Res = await AuthAPI.getCurrentUser();
+        if (Res.status == 200) {
+            if (Res.data.requiresTwoFactorAuth) {
+                const OTP = GetOTP();
                 console.log(`Attempting 2FA OTP: ${OTP}`);
-                const auth = await authAPI.verify2FA({ code: OTP });
+                const auth = await AuthAPI.verify2FA({ code: OTP });
                 if (auth.status == 200) {
                     console.log("2FA auth sucessfull!");
                 } else {
@@ -53,79 +55,79 @@ export async function run(interaction) {
                 }
             }
     
-            return authAPI;
+            return AuthAPI;
         } else {
-            console.log(`Pre-2FA auth failed: ${res.status}`)
+            console.log(`Pre-2FA auth failed: ${Res.status}`)
         }
     
         return null;
     }
 
-    const session = await getSession();
-    if (!session) {
+    const Session = await GetSession();
+    if (!Session) {
         console.log("Failed to get session bailing out");
-        return interaction.editReply({ content: `Error: Failed to grant VRC perms I might be rate limited`, ephemeral: false });
+        return Interaction.editReply({ content: `Error: Failed to grant VRC perms I might be rate limited`, ephemeral: false });
     }
     
-    const groupsAPI = new vrchat.GroupsApi(creds);
-    let res = await groupsAPI.getGroupMember(config.group.ID, interaction.message.embeds[0].fields[2].value);
-    if (res.data == null) {
+    const GroupsAPI = new VRChat.GroupsApi(Credentials);
+    let Res = await GroupsAPI.getGroupMember(Config.Group.ID, Interaction.message.embeds[0].fields[2].value);
+    if (Res.data == null) {
         try {
-            const res = await groupsAPI.createGroupInvite(config.group.ID, { userId: `${interaction.message.embeds[0].fields[2].value}`, confirmOverrideBlock: false});
-            if (res.status == 200) {
-                return interaction.editReply({ content: `Error: Could not find the user in the group they have been invited please retry when they have joined`, ephemeral: false });
+            const Res = await GroupsAPI.createGroupInvite(Config.Group.ID, { userId: `${Interaction.message.embeds[0].fields[2].value}`, confirmOverrideBlock: false});
+            if (Res.status == 200) {
+                return Interaction.editReply({ content: `Error: Could not find the user in the group they have been invited please retry when they have joined`, ephemeral: false });
             }
 
-            return interaction.editReply({ content: `Error: Could not find the user in the group, and I was unable to invite them please try again when they have joined`, ephemeral: false });
-        } catch(err) {
-            console.log(err);
-            return interaction.editReply({ content: `Error: VRC API could not retrieve user`, ephemeral: false });
+            return Interaction.editReply({ content: `Error: Could not find the user in the group, and I was unable to invite them please try again when they have joined`, ephemeral: false });
+        } catch(Error) {
+            console.log(`Error: ${Error}`);
+            return Interaction.editReply({ content: `Error: VRC API could not retrieve user`, ephemeral: false });
         }
     }
 
-    if (res.status == 200 && res.data.membershipStatus == 'invited') {
-        return interaction.editReply({ content: `Error: The user has already been invited to the group please try again when they have joined`, ephemeral: false });
+    if (Res.status == 200 && Res.data.membershipStatus == 'invited') {
+        return Interaction.editReply({ content: `Error: The user has already been invited to the group please try again when they have joined`, ephemeral: false });
     }
 
-    res = await groupsAPI.addGroupMemberRole(config.group.ID, interaction.message.embeds[0].fields[2].value, config.group.RoleID);
-    if (res.status != 200) {
+    Res = await GroupsAPI.addGroupMemberRole(Config.Group.ID, Interaction.message.embeds[0].fields[2].value, Config.Group.RoleID);
+    if (Res.status != 200) {
         console.log("Failed to get session bailing out");
-        return interaction.editReply({ content: `Error: Failed to grant VRC perms I might be rate limited`, ephemeral: false });
+        return Interaction.editReply({ content: `Error: Failed to grant VRC perms I might be rate limited`, ephemeral: false });
     }
 
-    const usersAPI = new vrchat.UsersApi(creds);
-    res = await usersAPI.getUser(interaction.message.embeds[0].fields[2].value);
-    if (res.status != 200) {
+    const UsersAPI = new VRChat.UsersApi(Credentials);
+    Res = await UsersAPI.getUser(Interaction.message.embeds[0].fields[2].value);
+    if (Res.status != 200) {
         console.log("Failed to get session bailing out");
-        return interaction.editReply({ content: `Error: Failed to grant VRC perms I might be rate limited`, ephemeral: false });
+        return Interaction.editReply({ content: `Error: Failed to grant VRC perms I might be rate limited`, ephemeral: false });
     }
 
-    let user = null;
-    const allMembers = await interaction.guild.members.fetch();
-    allMembers.forEach(m => {
-        if (m.id == interaction.message.embeds[0].fields[0].value) {
-            user = m;
+    let User = null;
+    const AllMembers = await Interaction.guild.members.fetch();
+    AllMembers.forEach(Member => {
+        if (Member.id == Interaction.message.embeds[0].fields[0].value) {
+            User = Member;
         }
     });
 
-    if (!user) {
-        return interaction.editReply({ content: `Failed to get handle to user, their roles in the discord were not updated`, ephemeral: true });
+    if (!User) {
+        return Interaction.editReply({ content: `Failed to get handle to user, their roles in the discord were not updated`, ephemeral: true });
     } else {
-        user.roles.add(config.discord.verifiedRoles[0]);
-        user.roles.add(config.discord.verifiedRoles[1]);
+        User.roles.add(Config.Discord.VerifiedRoles[0]);
+        User.roles.add(Config.Discord.VerifiedRoles[1]);
         
-        const hasUnverifiedRole = user.roles.cache.some(r => config.discord.unverifiedRoles.includes(r.id));
+        const hasUnverifiedRole = User.roles.cache.some(r => Config.discord.unverifiedRoles.includes(r.id));
         if (hasUnverifiedRole) {
-            user.roles.remove(config.discord.unverifiedRoles[0]);
+            User.roles.remove(Config.discord.unverifiedRoles[0]);
         }
     }
 
     try {
-        await user.setNickname(res.data.displayName);
-    } catch(error) {
-        console.log(error)
-        return interaction.editReply({ content: `User verified but I failed to change the users nickname`, ephemeral: true });
+        await User.setNickname(Res.data.displayName);
+    } catch(Error) {
+        console.log(`Error: ${Error}`);
+        return Interaction.editReply({ content: `User verified but I failed to change the users nickname`, ephemeral: true });
     }
 
-    return interaction.editReply({ content: `Ok the user has been verified!`, ephemeral: false });
+    return Interaction.editReply({ content: `Ok the user has been verified!`, ephemeral: false });
 }

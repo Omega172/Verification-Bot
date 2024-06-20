@@ -1,85 +1,87 @@
-import config from "./../config.json" assert { type: 'json' }
+import Config from "./../Config.json" assert { type: 'json' }
 import { EmbedBuilder } from "discord.js";
 
-export async function run(interaction) {
-    function sendErrorMessage(msg) {
-        const channel = interaction.client.channels.cache.get(config.discord.errorsID);
-        if (channel) {
-            channel.send(msg);
+export var Name = "ConfirmClose.mjs";
+
+export async function Run(Interaction) {
+    function SendErrorMessage(Message) {
+        console.log(Message)
+
+        const Channel = interaction.client.channels.cache.get(Config.Discord.ErrorsID);
+        if (Channel) {
+            Channel.send(Message);
         }
     }
 
-    await interaction.deferReply({ephemeral: true });
+    await Interaction.deferReply({ephemeral: true });
 
-    if (!interaction.member.roles.cache.some(r => config.discord.staffRoles.includes(r.id))) {
-        sendErrorMessage(`This dummy <@${interaction.member.id}> tried to close a ticket with out the correct perms.`);
-        return interaction.editReply({ content: `You do not have the perms needed to close the ticket`, ephemeral: true });
+    if (!Interaction.member.roles.cache.some(r => config.discord.staffRoles.includes(r.id))) {
+        SendErrorMessage(`This dummy <@${Interaction.member.id}> tried to close a ticket with out the correct perms.`);
+        return Interaction.editReply({ content: `You do not have the perms needed to close the ticket`, ephemeral: true });
     }
 
-    if (interaction.message.embeds[0].fields.length < 3) {
+    if (Interaction.message.embeds[0].fields.length < 3) {
         try {
-            return interaction.channel.delete("Ticket closed");
+            return Interaction.channel.delete("Ticket closed");
         } catch (error) {
-            console.log(`Failed to delete channel: ${interaction.channel.id}`);
-            return sendErrorMessage(`Failed to delete channel: ${interaction.channel.id}`);
+            return SendErrorMessage(`Failed to delete channel: ${Interaction.channel.id}`);
         }
     }
 
-    const userID = interaction.message.embeds[0].fields[0].value;
-    const vrcLink = interaction.message.embeds[0].fields[1].value;
-    const vrcID = interaction.message.embeds[0].fields[2].value;
+    const UserID = Interaction.message.embeds[0].fields[0].value;
+    const VRCLink = Interaction.message.embeds[0].fields[1].value;
+    const VRCID = Interaction.message.embeds[0].fields[2].value;
 
-    let user = null;
-    const allMembers = await interaction.guild.members.fetch();
-    allMembers.forEach(m => {
-        if (m.id == userID) {
-            user = m;
+    let User = null;
+    const AllMembers = await Interaction.guild.members.fetch();
+    AllMembers.forEach(Member => {
+        if (Member.id == UserID) {
+            User = Member;
         }
     });
 
-    if (!user) {
+    if (!User) {
         try {
-            interaction.message.delete();
-        } catch (error) {
-            console.log(`Failed to delete message: ${interaction.message.id}`);
-            return sendErrorMessage(`Failed to delete message: ${interaction.message.id}`);
+            Interaction.message.delete();
+        } catch (Error) {
+            SendErrorMessage(`Error: ${Error}`);
+            return SendErrorMessage(`Failed to delete message: ${Interaction.message.id}`);
         }
-        return interaction.reply({ content: `Failed to get handle to user`, ephemeral: true });
+        return Interaction.reply({ content: `Failed to get handle to user`, ephemeral: true });
     } else {
-        const isVerified = user.roles.cache.some(r => config.discord.verifiedRoles.includes(r.id));
-        if (!isVerified) {
+        const IsVerified = User.roles.cache.some(r => config.discord.verifiedRoles.includes(r.id));
+        if (!IsVerified) {
             try {
-                return interaction.channel.delete("Ticket closed");
-            } catch(error) {
-                console.log(`Failed to delete message: ${interaction.message.id}`);
-                return sendErrorMessage(`Failed to delete message: ${interaction.message.id}`);
+                return Interaction.channel.delete("Ticket closed");
+            } catch(Error) {
+                SendErrorMessage(`Error: Error`);
+                return SendErrorMessage(`Failed to delete message: ${Interaction.message.id}`);
             }
         }
     }
 
-    const isVerified = user.roles.cache.some(r => r.id == config.discord.verifiedRoles[0]);
-    const isVerifiedPlus = user.roles.cache.some(r => r.id == config.discord.verifiedRoles[1]);
+    const IsVerified = User.roles.cache.some(r => r.id == config.discord.verifiedRoles[0]);
+    const IsVerifiedPlus = User.roles.cache.some(r => r.id == config.discord.verifiedRoles[1]);
 
-    const embed = new EmbedBuilder()
+    const Embed = new EmbedBuilder()
         .setColor(0x00ffff)
         .setTitle('Transcript')
-        .setDescription(`Verification transcript for <@${userID}>`)
+        .setDescription(`Verification transcript for <@${UserID}>`)
         .addFields(
-            { name: 'Staff Member', value: `<@${interaction.member.id}>` },
-            { name: 'User', value: `Discord: <@${userID}>\nVRC Link: ${vrcLink}\nVRC ID: ${vrcID}}` },
-            { name: 'Verified', value: `${isVerified.toString()}` },
-            { name: 'Verified Plus', value: `${isVerifiedPlus.toString()}` }
+            { name: 'Staff Member', value: `<@${Interaction.member.id}>` },
+            { name: 'User', value: `Discord: <@${UserID}>\nVRC Link: ${VRCLink}\nVRC ID: ${VRCID}}` },
+            { name: 'Verified', value: `${IsVerified.toString()}` },
+            { name: 'Verified Plus', value: `${IsVerifiedPlus.toString()}` }
         )
         .setTimestamp()
         .setFooter({ text: 'Bot made by Omega172' });
 
-    const transcriptChannel = interaction.guild.channels.cache.get(config.discord.transcriptID);
-    transcriptChannel.send({ embeds: [embed] });
+    const TranscriptChannel = Interaction.guild.channels.cache.get(Config.Discord.TranscriptID);
+    TranscriptChannel.send({ embeds: [Embed] });
 
     try {
-        return interaction.channel.delete("Ticket closed");
+        return Interaction.channel.delete("Ticket closed");
     } catch (error) {
-        console.log(`Failed to delete message: ${interaction.message.id}`);
-        return sendErrorMessage(`Failed to delete message: ${interaction.message.id}`);
+        return SendErrorMessage(`Failed to delete message: ${Interaction.message.id}`);
     }
 }
