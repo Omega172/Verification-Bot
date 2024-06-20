@@ -141,7 +141,7 @@ DiscordClient.on(Events.InteractionCreate, async (Interaction) => {
     }
 
     if (Interaction.isChatInputCommand()) {
-	    const Command = DiscordClient.commands.get(Interaction.commandName);
+	    const Command = DiscordClient.Commands.get(Interaction.commandName);
 
         if (!Command) {
             console.log(`Error: No command matching ${Interaction.commandName} was found.`)
@@ -192,7 +192,7 @@ DiscordClient.on(Events.MessageCreate, async (Message) => {
         }
 
         if (Message.content.toLowerCase() == "what is omega listening to?") {
-            GetToken((SpotifyToken) => {
+            GetToken(Config.Spotify.Key, (SpotifyToken) => {
                 GetSongData(SpotifyToken, (Data) => {
                     if (Data == 'Error') {
                         return Message.reply('Omega is not listening to anything at the moment.');

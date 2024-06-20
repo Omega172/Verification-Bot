@@ -3,7 +3,7 @@ import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ButtonBuilder, 
 export var Name = "Create";
 
 export async function Run(Interaction) {
-    await Interaction.editReply(".");
+    await Interaction.reply(".");
     await Interaction.deleteReply()
 
     const Embed = new EmbedBuilder()
