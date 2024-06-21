@@ -1,13 +1,13 @@
 import Config from "./../Config.json" assert { type: 'json' }
 import { EmbedBuilder } from "discord.js";
 
-export var Name = "ConfirmClose.mjs";
+export var Name = "ConfirmClose";
 
 export async function Run(Interaction) {
     function SendErrorMessage(Message) {
         console.log(Message)
 
-        const Channel = interaction.client.channels.cache.get(Config.Discord.ErrorsID);
+        const Channel = Interaction.client.channels.cache.get(Config.Discord.ErrorsID);
         if (Channel) {
             Channel.send(Message);
         }
@@ -15,7 +15,7 @@ export async function Run(Interaction) {
 
     await Interaction.deferReply({ephemeral: true });
 
-    if (!Interaction.member.roles.cache.some(r => config.discord.staffRoles.includes(r.id))) {
+    if (!Interaction.member.roles.cache.some(Role => Config.Discord.StaffRoles.includes(Role.id))) {
         SendErrorMessage(`This dummy <@${Interaction.member.id}> tried to close a ticket with out the correct perms.`);
         return Interaction.editReply({ content: `You do not have the perms needed to close the ticket`, ephemeral: true });
     }
@@ -49,7 +49,7 @@ export async function Run(Interaction) {
         }
         return Interaction.reply({ content: `Failed to get handle to user`, ephemeral: true });
     } else {
-        const IsVerified = User.roles.cache.some(r => config.discord.verifiedRoles.includes(r.id));
+        const IsVerified = User.roles.cache.some(Role => Config.Discord.VerifiedRoles.includes(Role.id));
         if (!IsVerified) {
             try {
                 return Interaction.channel.delete("Ticket closed");
@@ -60,8 +60,8 @@ export async function Run(Interaction) {
         }
     }
 
-    const IsVerified = User.roles.cache.some(r => r.id == config.discord.verifiedRoles[0]);
-    const IsVerifiedPlus = User.roles.cache.some(r => r.id == config.discord.verifiedRoles[1]);
+    const IsVerified = User.roles.cache.some(Role => Role.id == Config.Discord.VerifiedRoles[0]);
+    const IsVerifiedPlus = User.roles.cache.some(Role => Role.id == Config.Discord.VerifiedRoles[1]);
 
     const Embed = new EmbedBuilder()
         .setColor(0x00ffff)
