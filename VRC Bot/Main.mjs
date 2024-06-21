@@ -135,8 +135,16 @@ DiscordClient.on(Events.InteractionCreate, async (Interaction) => {
             await StoredInteraction.Run(Interaction);
             return;
         } catch (Error) {
-            SendErrorMessage(`Error: ${Error}`);
-            await Interaction.reply({ content: 'There was an error while executing this function!', ephemeral: true });
+            SendErrorMessage(`${Error}`);
+            if (Error.stack) {
+                console.log(Error.stack);
+            }
+
+            try {
+                await Interaction.reply({ content: 'There was an error while executing this function!', ephemeral: true });
+            } catch (Error2) {
+                await Interaction.message.channel.send({ content: 'There was an error while executing this function!', ephemeral: true });
+            }
         }
     }
 
@@ -261,22 +269,57 @@ Because he didn’t get the… algo-rhythm…`, // 22
             const Tokens = Msg.split(" ");
 
             if (Tokens.length > 3) {
-                Message.reply(`No phrase index supplied`);
+                await Message.reply(`No phrase index supplied`);
+                Message.delete();
                 return;
             }
 
             if (isNaN(Tokens[2])) {
-                Message.reply(`${Tokens[2]} is not a number`);
+                await Message.reply(`${Tokens[2]} is not a number`);
+                Message.delete();
                 return;
             }
 
             const Index = Tokens[2];
             if (Index < 0 || Index > (Phrases.length - 1)) {
-                Message.reply(`${Index} is not a valid phrase index, please use a number between 0 and ${(Phrases.length - 1)}`);
+                await Message.reply(`${Index} is not a valid phrase index, please use a number between 0 and ${(Phrases.length - 1)}`);
+                Message.delete();
                 return;
             }
 
-            Message.reply(Phrases[Index]);
+            var Phrase = Phrases[Index];
+            if (Phrase == 'SONG') {
+                console.log('a');
+                await GetToken(Config.Spotify.Key, async (SpotifyToken) => {
+                    await GetSongData(SpotifyToken, async (Data) => {
+                        if (Data == 'Error') {
+                            await Message.reply('Omega is not listening to anything at the moment.');
+
+                            try {
+                                Message.delete();
+                            } catch(Error) {
+                                console.log(`Error: ${Error}`);
+                            }
+
+                            return;
+                        }
+                
+                        await Message.reply(`Omega is currently listening to: ${Data}`);
+
+                        try {
+                            Message.delete();
+                        } catch(Error) {
+                            console.log(`Error: ${Error}`);
+                        }
+
+                        return;
+                    });
+                });
+
+                return;
+            }
+
+            await Message.reply(Phrase);
 
             try {
                 Message.delete();

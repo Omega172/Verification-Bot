@@ -12,6 +12,6 @@
   "dependencies": {
     "discord.js": "^14.15.2",
     "totp-generator": "^1.0.0",
-    "vrchat": "^1.17.3"
+    "vrchat": "^1.17.6"
   }
 }

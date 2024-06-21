@@ -34,8 +34,8 @@ export async function Run(Interaction) {
     });
     
     function GetOTP() {
-        const { OTP } = TOTP.generate(Config.Auth.TOTPSecret);
-        return OTP;
+        const { otp } = TOTP.generate(Config.Auth.TOTPSecret);
+        return otp;
     }
     
     async function GetSession() {
@@ -57,7 +57,7 @@ export async function Run(Interaction) {
     
             return AuthAPI;
         } else {
-            console.log(`Pre-2FA auth failed: ${res.status}`)
+            console.log(`Pre-2FA auth failed: ${Res.status}`)
         }
     
         return null;
@@ -78,7 +78,7 @@ export async function Run(Interaction) {
 
     let User = null;
     const AllMembers = await Interaction.guild.members.fetch();
-    AllMembers.forEach(m => {
+    AllMembers.forEach(Member => {
         if (Member.id == Interaction.message.embeds[0].fields[0].value) {
             User = Member;
         }
@@ -89,8 +89,8 @@ export async function Run(Interaction) {
     } else {
         User.roles.add(Config.Discord.VerifiedRoles[0]);
         
-        const hasUnverifiedRole = User.roles.cache.some(r => config.discord.unverifiedRoles.includes(r.id));
-        if (hasUnverifiedRole) {
+        const HasUnverifiedRole = User.roles.cache.some(Role => Config.Discord.UnverifiedRoles.includes(Role.id));
+        if (HasUnverifiedRole) {
             User.roles.remove(Config.Discord.UnverifiedRoles[0]);
         }
     }
