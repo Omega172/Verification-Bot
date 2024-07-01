@@ -1,20 +1,29 @@
 {
-  "name": "vrc-bot",
+  "name": "vrchat-discord-verifictation-bot",
   "version": "1.0.0",
-  "description": "A bot that interfaces with the VRChat API and Discord to allow for linking accounts and verification in a Discord server",
-  "main": "Main.mjs",
+  "description": "A bot that allows for modifying roles in a VRChat group from Discord",
+  "main": "Main.ts",
+  "types": "Build/Main.d.ts",
   "scripts": {
-    "test": "node --no-warnings=ExperimentalWarning Main.mjs"
+    "test": "nodemon",
+    "build": "tsc"
   },
   "author": "Omega172",
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "discord.js": "^14.15.2",
+    "@omega172/autoupdatejs": "^1.0.1",
+    "discord.js": "^14.15.3",
+    "lokijs": "^1.5.12",
     "totp-generator": "^1.0.0",
+    "tsx": "^4.15.7",
+    "typescript": "^5.5.2",
     "vrchat": "^1.17.6"
   },
   "devDependencies": {
-    "esbuild": "^0.21.5"
+    "@types/lokijs": "^1.5.14",
+    "@types/node": "^20.14.8",
+    "discord-api-types": "^0.37.90",
+    "nodemon": "^3.1.4"
   }
 }
