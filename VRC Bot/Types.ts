@@ -65,6 +65,26 @@ export type Config = {
     }
 }
 
+export type Package = {
+    name: string
+    version: string
+    description: string
+    main: string
+    types: string
+    scripts: {
+        [key: string]: string
+    }
+    author: string
+    license: string
+    type: string
+    dependencies: {
+        [key: string]: string
+    }
+    devDependencies: {
+        [key: string]: string
+    }
+}
+
 export type Edit = {
     Content: string
     HasAttachment: boolean

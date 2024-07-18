@@ -1,7 +1,8 @@
 import { AutoUpdate } from '@omega172/autoupdatejs';
 import BotConfig from './Config.json' with { type: 'json' };
+import PKG from './package.json' with { type: 'json' };
 import { Client, Collection, Events, GatewayIntentBits, Interaction, TextChannel, ButtonInteraction, CacheType } from 'discord.js';
-import { DiscordType, ModalInteractionType, ButtonInteractionType, CommandInteractionType, Ticket, MsgType, Edit, SessionType } from './Types.js';
+import { DiscordType, ModalInteractionType, ButtonInteractionType, CommandInteractionType, Ticket, MsgType, Edit, SessionType, Package } from './Types.js';
 import Loki from 'lokijs';
 import { TOTP } from 'totp-generator';
 import VRChat from 'vrchat'
@@ -124,6 +125,7 @@ new AutoUpdate({
     ExecuteOnComplete: 'echo Update complete!',
     ExitOnComplete: true
 }).CheckForUpdate((UpdateAvailable) => {
+    console.log(`Current Version: ${(PKG as Package).version}`);
     if (UpdateAvailable) {
         console.log('You should update!');
     } else {
