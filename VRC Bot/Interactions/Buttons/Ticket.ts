@@ -5,7 +5,7 @@ import VRChat from 'vrchat'
 async function Verify(Discord: DiscordType, Interaction: ButtonInteraction<CacheType>, Config: VerifyConfig) {
     if (!Config.IsStaff) {
         Discord.LogMessage(`<@${Interaction.user.id}> probably tried to verify themself LMFAO!`);
-        return Interaction.reply({ content: 'You do not have the permissions to verify users', ephemeral: true });
+        return Interaction.editReply({ content: 'You do not have the permissions to verify users'});
     }
 
     const Tickets = Discord.Database.getCollection<Ticket>('Tickets');
@@ -14,72 +14,76 @@ async function Verify(Discord: DiscordType, Interaction: ButtonInteraction<Cache
     });
 
     if (!Result.length || !Result[0].VRChatID) {
-        return Interaction.reply( {content: `There was an error, somehow this ticket does not exist :)`, ephemeral: true });;
+        return Interaction.editReply( {content: `There was an error, somehow this ticket does not exist :)`});;
     }
 
     const AuthAPI = await Discord.GetSession(Interaction);
     if (AuthAPI == null) {
-        return Interaction.reply({ content: `Failed to authenticate with VRChat API`, ephemeral: true });
+        return Interaction.editReply({ content: `Failed to authenticate with VRChat API`});
     }
 
     const GroupsAPI = new VRChat.GroupsApi(Discord.Credentials);
     try {
         let MemberResponse = await GroupsAPI.getGroupMember(Discord.Config.VRChat.GroupID, Result[0].VRChatID);
         if (MemberResponse.status != 200) {
-            return Interaction.reply({ content: `Failed to get group member data from VRChat API`, ephemeral: true });
+            return Interaction.editReply({ content: `Failed to get group member data from VRChat API`});
         }
 
         if (MemberResponse.data == null) {
             try {
                 const InviteResponse = await GroupsAPI.createGroupInvite(Discord.Config.VRChat.GroupID, { userId: Result[0].VRChatID, confirmOverrideBlock: false });
                 if (InviteResponse.status != 200) {
-                    return Interaction.reply({ content: `Failed to send invite using the VRChat API`, ephemeral: true });
+                    return Interaction.editReply({ content: `Failed to send invite using the VRChat API`});
                 }
                 
-                return Interaction.reply({ content: `<@${Result[0].VRChatID}> you have been invited to the group, please let staff know when you have accepted the invite.`, ephemeral: true });
+                const Channel = Interaction.channel
+                if (Channel) {
+                    Channel.send(`<@${Result[0].UserID}> you have been invited to the group, please let staff know when you have accepted the invite.`);
+                }
+                return Interaction.editReply({ content: `<@${Result[0].UserID}> has been invited to the group.`});
             } catch(Error: any) {
                 console.log(Error);
-                return Interaction.reply({ content: `Failed to send invite using the VRChat API`, ephemeral: true });
+                return Interaction.editReply({ content: `Failed to send invite using the VRChat API`});
             }
         }
 
         if (MemberResponse.status == 200 && MemberResponse.data.membershipStatus == 'invited') {
-            return Interaction.reply({ content: `The user has already been invited to the group please try again when they have joined`, ephemeral: false });
+            return Interaction.editReply({ content: `The user has already been invited to the group please try again when they have joined`});
         }
 
         if (Config.VerifyPlus) {
             try {
                 const AddRoleResponse = await GroupsAPI.addGroupMemberRole(Discord.Config.VRChat.GroupID, Result[0].VRChatID, Discord.Config.VRChat.GroupRoleID);
                 if (AddRoleResponse.status != 200) {
-                    return Interaction.reply({ content: `Failed to edit user roles using the VRChat API`, ephemeral: true });
+                    return Interaction.editReply({ content: `Failed to edit user roles using the VRChat API`});
                 }
             } catch (Error: any) {
                 console.log(Error);
-                return Interaction.reply({ content: `Failed to edit user roles using the VRChat API`, ephemeral: true });
+                return Interaction.editReply({ content: `Failed to edit user roles using the VRChat API`});
             }
         }
     } catch (Error: any) {
         console.error(Error);
-        return Interaction.reply({ content: `Failed to get group member data from VRChat API`, ephemeral: true });
+        return Interaction.editReply({ content: `Failed to get group member data from VRChat API`});
     }
 
     const UsersAPI = new VRChat.UsersApi(Discord.Credentials);
     try {
         const UserResponse = await UsersAPI.getUser(Result[0].VRChatID);
         if (UserResponse.status != 200) {
-            return Interaction.reply({ content: `Failed to get user data from VRChat API`, ephemeral: true });
+            return Interaction.editReply({ content: `Failed to get user data from VRChat API`});
         }
 
         const GuildMembers = await Interaction.guild?.members.fetch();
         if (!GuildMembers) {
-            return Interaction.reply({ content: `Failed to fetch guild members collection`, ephemeral: true });
+            return Interaction.editReply({ content: `Failed to fetch guild members collection`});
         }
 
         const User = GuildMembers.find((Member) => {
             return Member.id == Result[0].UserID;
         })
         if (!User) {
-            return Interaction.reply({ content: `Failed to get discord user data for <@${Result[0].UserID}>`, ephemeral: true });
+            return Interaction.editReply({ content: `Failed to get discord user data for <@${Result[0].UserID}>`});
         }
 
         if (!Config.IsVerified) {
@@ -102,7 +106,7 @@ async function Verify(Discord: DiscordType, Interaction: ButtonInteraction<Cache
 
             const Message: Message = await Interaction.message.channel.messages.fetch(Result[0].Embed);
             if (!Message) {
-                Interaction.reply('There was an error, DID SOMEONE DELETE THE EMBED!!!');
+                Interaction.editReply('There was an error, DID SOMEONE DELETE THE EMBED!!!');
             }
 
             const Embed = EmbedBuilder.from(Message.embeds[0]);
@@ -130,12 +134,16 @@ async function Verify(Discord: DiscordType, Interaction: ButtonInteraction<Cache
 
             Message.edit({ content: Message.content, components: Message.components, embeds: [Embed] });
 
-            return Interaction.reply({ content: `<@${Result[0].UserID}> has been verified, but I failed to change their nickname to ${UserResponse.data.displayName}`, ephemeral: false });
+            const Channel = Interaction.channel
+            if (Channel) {
+                Channel.send(`<@${Result[0].UserID}> has been verified, but I failed to change their nickname to ${UserResponse.data.displayName}`);
+            }
+            return Interaction.editReply({ content: `Done!`});
         }
 
     } catch (Error: any) {
         console.log(Error);
-        return Interaction.reply({ content: `Failed to get user data from VRChat API`, ephemeral: true });
+        return Interaction.editReply({ content: `Failed to get user data from VRChat API`});
     }
 
     Result[0].VerificationType = (Config.VerifyPlus) ? "Verified Plus" : "Verified";
@@ -143,7 +151,7 @@ async function Verify(Discord: DiscordType, Interaction: ButtonInteraction<Cache
 
     const Message: Message = await Interaction.message.channel.messages.fetch(Result[0].Embed);
     if (!Message) {
-        Interaction.reply('There was an error, DID SOMEONE DELETE THE EMBED!!!');
+        Interaction.editReply('There was an error, DID SOMEONE DELETE THE EMBED!!!');
     }
 
     const Embed = EmbedBuilder.from(Message.embeds[0]);
@@ -171,7 +179,11 @@ async function Verify(Discord: DiscordType, Interaction: ButtonInteraction<Cache
 
     Message.edit({ content: Message.content, components: Message.components, embeds: [Embed] });
 
-    return Interaction.reply({ content: `<@${Result[0].UserID}> has been verified`, ephemeral: false });
+    const Channel = Interaction.channel
+    if (Channel) {
+        Channel.send(`<@${Result[0].UserID}> has been verified.`);
+    }
+    return Interaction.editReply({ content: `Done!`});
 }
 
 export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<CacheType>) {
@@ -188,7 +200,7 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
 
     const Tickets = Discord.Database.getCollection<Ticket>('Tickets');
     const Result: (Ticket & LokiObj)[] = Tickets.where((Ticket) => {
-        return Ticket.ChannelID == Interaction.channelId&& Ticket.Open;
+        return Ticket.ChannelID == Interaction.channelId && Ticket.Open;
     });
 
     if (Result.length) {
@@ -214,6 +226,11 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
     }
 
     if (Interaction.customId == IDs[0]) { // TicketCreate
+        const Tickets = Discord.Database.getCollection<Ticket>('Tickets');
+        const Result: (Ticket & LokiObj)[] = Tickets.where((Ticket) => {
+            return Ticket.UserID == Interaction.user.id && Ticket.Open;
+        });
+
         if (Result.length) {
             return Interaction.reply( {content: `You already have a ticket open: <#${Result[0].ChannelID}>`, ephemeral: true });;
         }
@@ -481,6 +498,7 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
     }
 
     if (Interaction.customId == IDs[7]) { // VerifyConfirm
+        Interaction.deferReply({ ephemeral: true });
         await Verify(Discord, Interaction, { IsUnverified: Unverified, IsVerified: Verified, IsStaff: HasStaff, VerifyPlus: false });
 
         Interaction.message.delete();
@@ -524,6 +542,7 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
     }
 
     if (Interaction.customId == IDs[10]) { // VerifyPlusConfirm
+        Interaction.deferReply({ ephemeral: true });
         await Verify(Discord, Interaction, { IsUnverified: Unverified, IsVerified: Verified, IsStaff: HasStaff, VerifyPlus: true });
 
         Interaction.message.delete();

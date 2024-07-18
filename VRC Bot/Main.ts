@@ -212,7 +212,7 @@ Discord.Client.on(Events.InteractionCreate, async (Interaction: Interaction) => 
             }
 
             const ErrorMessage = 'There was an error while executing this modal interaction!';
-            Discord.LogMessage(Error, true);
+            Discord.LogMessage(`\`\`\`ts\n${Error}\`\`\``, true);
             if (Interaction.replied) {
                 await Interaction.editReply({ content: ErrorMessage});
             } else {
@@ -242,7 +242,7 @@ Discord.Client.on(Events.InteractionCreate, async (Interaction: Interaction) => 
             }
 
             const ErrorMessage = 'There was an error while executing this button interaction!';
-            Discord.LogMessage(Error, true);
+            Discord.LogMessage(`\`\`\`ts\n${Error}\`\`\``, true);
             if (Interaction.replied) {
                 await Interaction.editReply({ content: ErrorMessage});
             } else {
@@ -272,7 +272,7 @@ Discord.Client.on(Events.InteractionCreate, async (Interaction: Interaction) => 
             }
 
             const ErrorMessage = 'There was an error while executing this command!';
-            Discord.LogMessage(Error, true);
+            Discord.LogMessage(`\`\`\`ts\n${Error}\`\`\``, true);
             if (Interaction.replied) {
                 await Interaction.editReply({ content: ErrorMessage});
             } else {
