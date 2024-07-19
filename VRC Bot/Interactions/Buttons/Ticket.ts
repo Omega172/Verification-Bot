@@ -106,7 +106,7 @@ async function Verify(Discord: DiscordType, Interaction: ButtonInteraction<Cache
 
             const Message: Message = await Interaction.message.channel.messages.fetch(Result[0].Embed);
             if (!Message) {
-                Interaction.editReply('There was an error, DID SOMEONE DELETE THE EMBED!!!');
+                return Interaction.editReply('There was an error, DID SOMEONE DELETE THE EMBED!!!');
             }
 
             const Embed = EmbedBuilder.from(Message.embeds[0]);
@@ -151,7 +151,7 @@ async function Verify(Discord: DiscordType, Interaction: ButtonInteraction<Cache
 
     const Message: Message = await Interaction.message.channel.messages.fetch(Result[0].Embed);
     if (!Message) {
-        Interaction.editReply('There was an error, DID SOMEONE DELETE THE EMBED!!!');
+        return Interaction.editReply('There was an error, DID SOMEONE DELETE THE EMBED!!!');
     }
 
     const Embed = EmbedBuilder.from(Message.embeds[0]);
@@ -301,7 +301,8 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
             StaffMember: null,
             Messages: [],
             Embed: Message.id,
-            Timestamp: Date.now()
+            Timestamp: Date.now(),
+            UnclaimTimestamp: null
         }
         Tickets.insert(Ticket);
 
@@ -317,27 +318,49 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
             return Interaction.reply( {content: `There was an error, somehow this ticket does not exist :)`, ephemeral: true });;
         }
 
+        if (Result[0].VRChatID == null) {
+            return Interaction.reply({ content: `The user must begin their verifiction before you can claim this ticket`, ephemeral: true });
+        }
+
         if (Result[0].StaffMember != null) {
             return Interaction.reply({ content: `Ticket already clamed by <@${Result[0].StaffMember}>`, ephemeral: true });
         }
 
         const Message: Message = await Interaction.message.channel.messages.fetch(Result[0].Embed);
         if (!Message) {
-            Interaction.reply('There was an error, DID SOMEONE DELETE THE EMBED!!!');
+            return Interaction.reply('There was an error, DID SOMEONE DELETE THE EMBED!!!');
         }
 
         const Embed = EmbedBuilder.from(Message.embeds[0]).addFields({ name: 'Staff Member', value: `<@${Interaction.user.id}>` });
-        const Component: MessageActionRowComponent | undefined = Message.components[0].components.find((Component, Index) => {
-            if (Component.customId == 'TicketClaim') {
-                return true;
-            }
-        });
-        if (Component) {
-            const Index = Message.components[0].components.indexOf(Component);
-            Message.components[0].components.splice(Index, 1);
+
+        const VerifyButton = new ButtonBuilder()
+            .setCustomId('Verify')
+            .setLabel('Verify User')
+            .setStyle(ButtonStyle.Secondary)
+
+        const VerifyPlusButton = new ButtonBuilder()
+            .setCustomId('VerifyPlus')
+            .setLabel('Verify Plus User')
+            .setStyle(ButtonStyle.Secondary);
+
+        const ClaimTicketButton = new ButtonBuilder()
+            .setCustomId('TicketUnclaim')
+            .setLabel('Unclaim Ticket')
+            .setStyle(ButtonStyle.Success);
+
+        const CloseTicketButton = new ButtonBuilder()
+            .setCustomId('TicketClose')
+            .setLabel('Close Ticket')
+            .setStyle(ButtonStyle.Danger);
+
+        const Row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder<ButtonBuilder>();
+        if (!(Interaction.member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
+            Row.addComponents(VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+        } else {
+            Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
         }
 
-        Message.edit({ content: Message.content, components: Message.components, embeds: [Embed] });
+        Message.edit({ content: Message.content, components: [Row], embeds: [Embed] });
 
         Result[0].StaffMember = Interaction.user.id;
         Tickets.update(Result);
@@ -467,7 +490,7 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
         return Interaction.reply({ content: `The ticket must be claimed before you can verify this user`, ephemeral: true });
     }
 
-    if (Result[0].StaffMember != Interaction.user.id) {
+    if (Result[0].StaffMember != Interaction.user.id && Interaction.customId != IDs[12]) {
         return Interaction.reply({ content: `Only <@${Result[0].StaffMember}> can verify this user`, ephemeral: true });
     }
 
@@ -559,6 +582,134 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
         return Interaction.reply({ content: 'Verify plus user canceled', ephemeral: true });
     }
 
+    if (Interaction.customId == IDs[12]) {// TicketUnclaim
+        if (!HasStaff) {
+            return Interaction.reply({ content: 'You do not have the permissions to claim a ticket', ephemeral: true });
+        }
+
+        if (!Result.length) {
+            return Interaction.reply( {content: `There was an error, somehow this ticket does not exist :)`, ephemeral: true });;
+        }
+
+        if (Result[0].UnclaimTimestamp != null) {
+            const CurrentTime: number = Date.now();
+            const TimeDiff = CurrentTime - Result[0].UnclaimTimestamp;
+
+            const SecondsElapsed = Math.round(TimeDiff / 1000);
+            console.log(`SecondsElapsed: ${SecondsElapsed}`);
+            if (SecondsElapsed < 300) {
+                return Interaction.reply({ content: `Please wait ${300 - SecondsElapsed} more seconds before you can force unclaim the ticket`, ephemeral: true });
+            }
+
+            const Message: Message = await Interaction.message.channel.messages.fetch(Result[0].Embed);
+            if (!Message) {
+                return Interaction.reply('There was an error, DID SOMEONE DELETE THE EMBED!!!');
+            }
+
+            const TicketEmbed = new EmbedBuilder()
+                .setColor(0x00ffff)
+                .setTitle('Verification Ticket Controls')
+                .addFields({ name: 'User', value: `<@${Result[0].UserID}>` })
+                .setTimestamp()
+                .setFooter({ text: 'Made by Omega172', iconURL: Interaction.user.displayAvatarURL() })
+
+            const VerifyButton = new ButtonBuilder()
+                .setCustomId('Verify')
+                .setLabel('Verify User')
+                .setStyle(ButtonStyle.Secondary)
+
+            const VerifyPlusButton = new ButtonBuilder()
+                .setCustomId('VerifyPlus')
+                .setLabel('Verify Plus User')
+                .setStyle(ButtonStyle.Secondary);
+
+            const ClaimTicketButton = new ButtonBuilder()
+                .setCustomId('TicketClaim')
+                .setLabel('Claim Ticket')
+                .setStyle(ButtonStyle.Success);
+
+            const CloseTicketButton = new ButtonBuilder()
+                .setCustomId('TicketClose')
+                .setLabel('Close Ticket')
+                .setStyle(ButtonStyle.Danger);
+
+            const Row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder<ButtonBuilder>();
+            if (!(Interaction.member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
+                Row.addComponents(VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+            } else {
+                Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+            }
+
+            Message.edit({ content: Message.content, components: [Row], embeds: [TicketEmbed] });
+
+            Result[0].UnclaimTimestamp = null;
+            Result[0].StaffMember = null;
+            Tickets.update(Result);
+            return Interaction.reply({ content: `Ticket force unclaimed by ${Interaction.user.id}!`, ephemeral: false });
+        }
+
+        if (Result[0].StaffMember != null) {
+            if (Result[0].StaffMember == Interaction.user.id) {
+                const Message: Message = await Interaction.message.channel.messages.fetch(Result[0].Embed);
+                if (!Message) {
+                    return Interaction.reply('There was an error, DID SOMEONE DELETE THE EMBED!!!');
+                }
+
+                const TicketEmbed = new EmbedBuilder()
+                    .setColor(0x00ffff)
+                    .setTitle('Verification Ticket Controls')
+                    .addFields({ name: 'User', value: `<@${Result[0].UserID}>` })
+                    .setTimestamp()
+                    .setFooter({ text: 'Made by Omega172', iconURL: Interaction.user.displayAvatarURL() })
+
+                const VerifyButton = new ButtonBuilder()
+                    .setCustomId('Verify')
+                    .setLabel('Verify User')
+                    .setStyle(ButtonStyle.Secondary)
+
+                const VerifyPlusButton = new ButtonBuilder()
+                    .setCustomId('VerifyPlus')
+                    .setLabel('Verify Plus User')
+                    .setStyle(ButtonStyle.Secondary);
+
+                const ClaimTicketButton = new ButtonBuilder()
+                    .setCustomId('TicketClaim')
+                    .setLabel('Claim Ticket')
+                    .setStyle(ButtonStyle.Success);
+
+                const CloseTicketButton = new ButtonBuilder()
+                    .setCustomId('TicketClose')
+                    .setLabel('Close Ticket')
+                    .setStyle(ButtonStyle.Danger);
+
+                const Row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder<ButtonBuilder>();
+                if (!(Interaction.member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
+                    Row.addComponents(VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+                } else {
+                    Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+                }
+
+                Message.edit({ content: Message.content, components: [Row], embeds: [TicketEmbed] });
+
+                Result[0].UnclaimTimestamp = null;
+                Result[0].StaffMember = null;
+                Tickets.update(Result);
+                return Interaction.reply({ content: `Ticket unclaimed by ${Interaction.user.id}!`, ephemeral: false });
+            }
+
+            if (Result[0].UnclaimTimestamp == null) {
+                Result[0].UnclaimTimestamp = Date.now();
+                Tickets.update(Result);
+            }
+
+            return Interaction.reply({ content: `Ticket can only be unclaimed by <@${Result[0].StaffMember}> or try again in 5 minutes`, ephemeral: true });
+        }
+
+        console.error(`Ticket.ts Unreachable ID[12]: ${Interaction.customId}`);
+        Discord.LogMessage(`Ticket.ts Unreachable ID[12]: ${Interaction.customId}`, true);
+        return Interaction.reply( {content: 'How did you get here, what the fuck?', ephemeral: true });
+    }
+
     console.error(`Ticket.ts Unreachable ID[NULL]: ${Interaction.customId}`);
     Discord.LogMessage(`Ticket.ts Unreachable ID[NULL]: ${Interaction.customId}`, true);
     return Interaction.reply( {content: 'How did you get here, what the fuck?', ephemeral: true });
@@ -576,5 +727,6 @@ export const IDs: string[] = [
     "VerifyCancel",
     "VerifyPlus",
     "VerifyPlusConfirm",
-    "VerifyPlusCancel"
+    "VerifyPlusCancel",
+    "TicketUnclaim"
 ];

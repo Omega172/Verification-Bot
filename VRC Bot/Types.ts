@@ -115,6 +115,7 @@ export type Ticket = {
     Messages: MsgType[]
     Embed: string
     Timestamp: number
+    UnclaimTimestamp: number | null
 }
 
 export type VerifyConfig = {
