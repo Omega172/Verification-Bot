@@ -305,7 +305,7 @@ Discord.Client.on(Events.MessageCreate, (Message) => {
         SenderID: Message.author.id,
         Content: Message.content,
         HasAttachment: (Message.attachments.size != 0),
-        NumAttachmetns: Message.attachments.size,
+        NumAttachments: Message.attachments.size,
         ID: Message.id,
         Edited: (Message.editedAt != null),
         Edits: [],

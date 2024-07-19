@@ -96,7 +96,7 @@ export type MsgType = {
     SenderID: string
     Content: string
     HasAttachment: boolean
-    NumAttachmetns: number
+    NumAttachments: number
     ID: string
     Edited: boolean
     Edits: Edit[]
