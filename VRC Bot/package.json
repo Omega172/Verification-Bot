@@ -1,6 +1,6 @@
 {
   "name": "vrchat-discord-verifictation-bot",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A bot that allows for modifying roles in a VRChat group from Discord",
   "main": "Main.ts",
   "types": "Build/Main.d.ts",

@@ -26,7 +26,8 @@ async function Verify(Discord: DiscordType, Interaction: ButtonInteraction<Cache
     try {
         let MemberResponse = await GroupsAPI.getGroupMember(Discord.Config.VRChat.GroupID, Result[0].VRChatID);
         if (MemberResponse.status != 200) {
-            return Interaction.editReply({ content: `Failed to get group member data from VRChat API`});
+            Discord.GetSession(Interaction);
+            return Interaction.editReply({ content: `Failed to get group member data from VRChat API, session has been refreshed try again!`});
         }
 
         if (MemberResponse.data == null) {
@@ -354,10 +355,17 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
             .setStyle(ButtonStyle.Danger);
 
         const Row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder<ButtonBuilder>();
-        if (!(Interaction.member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
-            Row.addComponents(VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
-        } else {
-            Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+        if (Interaction.guild) {
+            const Member: GuildMember | undefined = Interaction.guild.members.cache.find(Member => Member.id == Result[0].UserID);
+            if (!Member) {
+                return Interaction.reply({content: 'Somehow this ticket does not have a UserID WTF?', ephemeral: true });
+            }
+
+            if (!(Member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
+                Row.addComponents(VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+            } else {
+                Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+            }
         }
 
         Message.edit({ content: Message.content, components: [Row], embeds: [Embed] });
@@ -645,7 +653,7 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
             Result[0].UnclaimTimestamp = null;
             Result[0].StaffMember = null;
             Tickets.update(Result);
-            return Interaction.reply({ content: `Ticket force unclaimed by ${Interaction.user.id}!`, ephemeral: false });
+            return Interaction.reply({ content: `Ticket force unclaimed by <@${Interaction.user.id}>!`, ephemeral: false });
         }
 
         if (Result[0].StaffMember != null) {
@@ -694,7 +702,7 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
                 Result[0].UnclaimTimestamp = null;
                 Result[0].StaffMember = null;
                 Tickets.update(Result);
-                return Interaction.reply({ content: `Ticket unclaimed by ${Interaction.user.id}!`, ephemeral: false });
+                return Interaction.reply({ content: `Ticket unclaimed by <@${Interaction.user.id}>!`, ephemeral: false });
             }
 
             if (Result[0].UnclaimTimestamp == null) {
