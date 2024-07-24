@@ -46,18 +46,7 @@ export async function Run(Discord: DiscordType, Interaction: ModalSubmitInteract
         }
 
         Message.edit({ content: Message.content, components: Message.components, embeds: [Embed] });
-        await Interaction.channel.send({ content: `Alright to finish the verification process you have three options:
-
-Cross verify with one of these servers/platforms:
-- LVC (Lewd VRC Collective)
-- Red Light District
-- Black Light District
-- Verified Fansly
-- Verified Pornhub
-
-Send a picture of your ID on a piece of paper with the date, current time,  your discord/VRC name, and Inflicted Pleasures written on it. (Anything on the ID can be censored except DOB and security markings on the ID). **This option gets you the normal verified role, which lets everyone know you are 18+, but you cannot participate in events or access the IRL NSFW channels**
-
-Send a selfie of you holding your ID on a piece of paper with the date, current time,  your discord/VRC name, and Inflicted Pleasures written on it next to your face. Your picture on your ID must be visible everything else can be Censored. **This option gets you the verified plus role, which allows you access to everything in the group and server including events**` });
+        await Interaction.channel.send({ content: `Now to continue you need to choose one of the verification methods listed here: https://discord.com/channels/1179642958975348847/1265518498784743446/1265519207689490573 and follow the methods linked steps to provide the needed information.` });
 
         return Interaction.reply({ content: `Thanks for providing your profile link`, ephemeral: true });
     }

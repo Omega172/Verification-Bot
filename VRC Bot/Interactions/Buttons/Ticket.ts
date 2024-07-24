@@ -642,10 +642,17 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
                 .setStyle(ButtonStyle.Danger);
 
             const Row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder<ButtonBuilder>();
-            if (!(Interaction.member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
-                Row.addComponents(VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
-            } else {
-                Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+            if (Interaction.guild) {
+                const Member: GuildMember | undefined = Interaction.guild.members.cache.find(Member => Member.id == Result[0].UserID);
+                if (!Member) {
+                    return Interaction.reply({content: 'Somehow this ticket does not have a UserID WTF?', ephemeral: true });
+                }
+    
+                if (!(Member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
+                    Row.addComponents(VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+                } else {
+                    Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+                }
             }
 
             Message.edit({ content: Message.content, components: [Row], embeds: [TicketEmbed] });
@@ -691,10 +698,17 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
                     .setStyle(ButtonStyle.Danger);
 
                 const Row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder<ButtonBuilder>();
-                if (!(Interaction.member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
-                    Row.addComponents(VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
-                } else {
-                    Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+                if (Interaction.guild) {
+                    const Member: GuildMember | undefined = Interaction.guild.members.cache.find(Member => Member.id == Result[0].UserID);
+                    if (!Member) {
+                        return Interaction.reply({content: 'Somehow this ticket does not have a UserID WTF?', ephemeral: true });
+                    }
+        
+                    if (!(Member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
+                        Row.addComponents(VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+                    } else {
+                        Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
+                    }
                 }
 
                 Message.edit({ content: Message.content, components: [Row], embeds: [TicketEmbed] });

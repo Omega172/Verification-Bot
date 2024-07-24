@@ -73,7 +73,7 @@ const Discord: DiscordType = {
     }),
     GetOTP: (): string => {
         const { otp, expires } = TOTP.generate(Discord.Config.VRChat.TOTPSecret);
-        console.log(`TOTP Code: ${otp} expires iat ${new Date(expires)}`);
+        console.log(`TOTP Code: ${otp} expires: ${new Date(expires)}`);
         return otp;
     },
     GetSession: async (Interaction?: ButtonInteraction<CacheType>): Promise<VRChat.AuthenticationApi | null> => {
