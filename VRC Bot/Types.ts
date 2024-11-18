@@ -48,7 +48,6 @@ export type Config = {
 
     StaffRoleIDs: string[]
 
-    VerifiedRoleID:string
     VerifiedPlusRoleID: string
     UnverifiedRoleID:string 
 

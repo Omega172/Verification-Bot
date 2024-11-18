@@ -245,7 +245,7 @@ Discord.Client.on(Events.InteractionCreate, async (Interaction: Interaction) => 
 
             const ErrorMessage = 'There was an error while executing this button interaction!';
             Discord.LogMessage(`\`\`\`ts\n${Error}\`\`\``, true);
-            if (Interaction.replied) {
+            if (Interaction.deferred) {
                 await Interaction.editReply({ content: ErrorMessage});
             } else {
                 await Interaction.reply({ content: ErrorMessage, ephemeral: true });

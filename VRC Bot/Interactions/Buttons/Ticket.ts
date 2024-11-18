@@ -1,5 +1,5 @@
 import { CacheType, ButtonInteraction, ActionRowBuilder, ButtonBuilder, ButtonStyle, Message, ChannelType, EmbedBuilder, GuildMember, MessageActionRowComponent, AttachmentBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
-import { DiscordType, SessionType, Ticket, VerifyConfig } from '../../Types.js';
+import { DiscordType, Ticket, VerifyConfig } from '../../Types.js';
 import VRChat from 'vrchat'
 
 async function Verify(Discord: DiscordType, Interaction: ButtonInteraction<CacheType>, Config: VerifyConfig) {
@@ -85,10 +85,6 @@ async function Verify(Discord: DiscordType, Interaction: ButtonInteraction<Cache
         })
         if (!User) {
             return Interaction.editReply({ content: `Failed to get discord user data for <@${Result[0].UserID}>`});
-        }
-
-        if (!Config.IsVerified) {
-            await User.roles.add(Discord.Config.VerifiedRoleID);
         }
 
         if (Config.VerifyPlus) {
@@ -219,10 +215,6 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
             if (Role.id == Discord.Config.UnverifiedRoleID) {
                 Unverified = true;
             }
-
-            if (Role.id == Discord.Config.VerifiedRoleID) {
-                Verified = true;
-            }
         });
     }
 
@@ -283,11 +275,7 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
             .setStyle(ButtonStyle.Danger);
 
         const Row: ActionRowBuilder<ButtonBuilder> = new ActionRowBuilder<ButtonBuilder>();
-        if (!(Interaction.member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
-            Row.addComponents(BeginButton, VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
-        } else {
-            Row.addComponents(BeginButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
-        }
+        Row.addComponents(BeginButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
 
         const Message = await Channel.send({ embeds: [TicketEmbed], components: [Row] });
         Channel.send(`Hello, <@${Interaction.user.id}> please press the \`Begin Verification\` button to start.`);
@@ -361,11 +349,7 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
                 return Interaction.reply({content: 'Somehow this ticket does not have a UserID WTF?', ephemeral: true });
             }
 
-            if (!(Member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
-                Row.addComponents(VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
-            } else {
-                Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
-            }
+            Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
         }
 
         Message.edit({ content: Message.content, components: [Row], embeds: [Embed] });
@@ -450,8 +434,9 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
         Result[0].Open = false;
         Tickets.update(Result);
 
+        Interaction.reply(`Done!`);
         Interaction.channel?.delete();
-        return Interaction.reply(`Done!`);
+        return;
     }
 
     if (Interaction.customId == IDs[4]) { // TicketCloseCancel
@@ -529,12 +514,12 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
     }
 
     if (Interaction.customId == IDs[7]) { // VerifyConfirm
-        Interaction.deferReply({ ephemeral: true });
+        await Interaction.deferReply({ ephemeral: true });
         await Verify(Discord, Interaction, { IsUnverified: Unverified, IsVerified: Verified, IsStaff: HasStaff, VerifyPlus: false });
 
         Interaction.message.delete();
         if (Interaction.isRepliable() && !Interaction.replied) {
-            return Interaction.reply({ content: 'How did you get here?', ephemeral: true });
+            return Interaction.editReply({ content: 'How did you get here?'});
         } else {
             return;
         }
@@ -573,7 +558,7 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
     }
 
     if (Interaction.customId == IDs[10]) { // VerifyPlusConfirm
-        Interaction.deferReply({ ephemeral: true });
+        await Interaction.deferReply({ ephemeral: true });
         await Verify(Discord, Interaction, { IsUnverified: Unverified, IsVerified: Verified, IsStaff: HasStaff, VerifyPlus: true });
 
         Interaction.message.delete();
@@ -648,11 +633,8 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
                     return Interaction.reply({content: 'Somehow this ticket does not have a UserID WTF?', ephemeral: true });
                 }
     
-                if (!(Member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
-                    Row.addComponents(VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
-                } else {
-                    Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
-                }
+                
+                Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
             }
 
             Message.edit({ content: Message.content, components: [Row], embeds: [TicketEmbed] });
@@ -704,11 +686,8 @@ export async function Run(Discord: DiscordType, Interaction: ButtonInteraction<C
                         return Interaction.reply({content: 'Somehow this ticket does not have a UserID WTF?', ephemeral: true });
                     }
         
-                    if (!(Member as GuildMember).roles.cache.some(Role => Role.id == Discord.Config.VerifiedRoleID)) {
-                        Row.addComponents(VerifyButton, VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
-                    } else {
-                        Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
-                    }
+                    
+                    Row.addComponents(VerifyPlusButton, ClaimTicketButton, CloseTicketButton);
                 }
 
                 Message.edit({ content: Message.content, components: [Row], embeds: [TicketEmbed] });
