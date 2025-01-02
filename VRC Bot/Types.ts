@@ -28,6 +28,7 @@ export type DiscordType = {
     },
     LogMessage: (Message: string, Error?: boolean) => void
     Credentials: VRChat.Configuration
+    Options: object
     GetOTP: () => string
     GetSession: (Interaction?: ButtonInteraction<CacheType>) => Promise<VRChat.AuthenticationApi | null>
 }

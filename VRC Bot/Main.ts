@@ -4,8 +4,9 @@ import PKG from './package.json' with { type: 'json' };
 import { Client, Collection, Events, GatewayIntentBits, Interaction, TextChannel, ButtonInteraction, CacheType } from 'discord.js';
 import { DiscordType, ModalInteractionType, ButtonInteractionType, CommandInteractionType, Ticket, MsgType, Edit, SessionType, Package } from './Types.js';
 import Loki from 'lokijs';
-import { TOTP } from 'totp-generator';
+import { Secret, TOTP } from "otpauth";
 import VRChat from 'vrchat'
+import readline from 'node:readline';
 
 const { Guilds, GuildMembers, GuildMessages, MessageContent } = GatewayIntentBits;
 const Discord: DiscordType = {
@@ -61,19 +62,21 @@ const Discord: DiscordType = {
     
         return;
     },
-    Credentials: new VRChat.Configuration({
-        apiKey: 'JlE5Jldo5Jibnk5O5hTx6XVqsJu4WJ26', // No I am not worried about sharing this key publicly (Reason: https://vrchatapi.github.io/docs/api/#overview--getting-started)
+    Credentials: new VRChat.Configuration({ // No I am not worried about sharing this key publicly (Reason: https://vrchatapi.github.io/docs/api/#overview--getting-started)
         username: BotConfig.VRChat.Username,
-        password: BotConfig.VRChat.Password,
-        baseOptions: {
-            headers: {
-                "User-Agent": BotConfig.VRChat.UserAgent
-            }
-        }
+        password: BotConfig.VRChat.Password
     }),
+    Options: { headers: { "User-Agent": BotConfig.VRChat.UserAgent}},
     GetOTP: (): string => {
-        const { otp, expires } = TOTP.generate(Discord.Config.VRChat.TOTPSecret);
-        console.log(`TOTP Code: ${otp} expires: ${new Date(expires)}`);
+        const totp = new TOTP({
+            algorithm: "SHA1",
+            digits: 6,
+            period: 30,
+            secret: Secret.fromBase32(Discord.Config.VRChat.TOTPSecret)
+        });
+
+        const otp = totp.generate();
+        console.log(`TOTP Code: ${otp}`);
         return otp;
     },
     GetSession: async (Interaction?: ButtonInteraction<CacheType>): Promise<VRChat.AuthenticationApi | null> => {
@@ -86,33 +89,36 @@ const Discord: DiscordType = {
 
         try {
             const AuthAPI = new VRChat.AuthenticationApi(Discord.Credentials);
-            const ResCurrentUser = await AuthAPI.getCurrentUser();
-            if (ResCurrentUser.status == 200 && (ResCurrentUser as any).data.requiresTwoFactorAuth) {
-                const Res2FA = await AuthAPI.verify2FA({ code: Discord.GetOTP() });
-                if (Res2FA.status != 200) {
-                    console.error(`2FA Failed`);
-                    Discord.LogMessage(`2FA Failed`, true);
-                    if (Interaction) {
-                        Interaction.reply({ content: `There was an error accessing the VRChat API`, ephemeral: true});
-                    }
-                    return null;
+            var ResCurrentUser: any;
+            await AuthAPI.getCurrentUser(Discord.Options).then(async resp => {
+                ResCurrentUser = resp.data;
+    
+                if (ResCurrentUser["requiresTwoFactorAuth"] && ResCurrentUser["requiresTwoFactorAuth"][0] === "totp") {
+                    await AuthAPI.verify2FA({ code: Discord.GetOTP() }, Discord.Options)
+                    ResCurrentUser = (await AuthAPI.getCurrentUser(Discord.Options)).data;
+                    console.log(`Logged in as: ${ResCurrentUser.displayName}`);
+    
+                    console.log(`Storing new session`);
+                    Result[0].Value = AuthAPI;
+                    Session.update(Result);
+                    return AuthAPI;
                 }
-
-                console.log(`Storing new session`);
-                Result[0].Value = AuthAPI;
-                Session.update(Result);
-                return AuthAPI;
-            } else {
+    
                 console.error(`Failed to get current user`);
                 Discord.LogMessage(`Failed to get current user`, true);
                 if (Interaction) {
                     Interaction.reply({ content: `There was an error accessing the VRChat API`, ephemeral: true});
                 }
+                
                 return null;
-            }
+            });
+    
+            return null;   
         } catch(Error: any) {
             console.error(`VRChat API failed to authenticate, probably rate-limited\n${Error}`);
+            console.error(`If error is 400 it is potentially a time sync error with the TOTP engine.`);
             Discord.LogMessage(`VRChat API failed to authenticate, probably rate-limited\n${Error}`, true);
+            Discord.LogMessage(`If error is 400 it is potentially a time sync error with the TOTP engine.`, true);
             return null;
         }
     }

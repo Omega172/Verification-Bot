@@ -13,17 +13,17 @@
   "type": "module",
   "dependencies": {
     "@omega172/autoupdatejs": "^1.0.1",
-    "discord.js": "^14.15.3",
+    "discord.js": "^14.17.1",
     "lokijs": "^1.5.12",
-    "totp-generator": "^1.0.0",
-    "tsx": "^4.15.7",
-    "typescript": "^5.5.2",
-    "vrchat": "^1.17.6"
+    "otpauth": "^9.3.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vrchat": "^1.18.8"
   },
   "devDependencies": {
     "@types/lokijs": "^1.5.14",
-    "@types/node": "^20.14.8",
-    "discord-api-types": "^0.37.90",
-    "nodemon": "^3.1.4"
+    "@types/node": "^22.10.3",
+    "discord-api-types": "^0.37.114",
+    "nodemon": "^3.1.9"
   }
 }
